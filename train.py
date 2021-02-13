@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, torchdata
+from torch.utils.data import DataLoader
 from torch import nn, optim
 
 import numpy as np
@@ -30,7 +30,7 @@ def main():
     val_size = 0.12
     val_len = int(val_size * len(icdar_dataset))
     train_len = len(icdar_dataset) - val_len
-    icdar_train_dataset, icdar_val_dataset = torchdata.random_split(
+    icdar_train_dataset, icdar_val_dataset = torch.utils.data.random_split(
         icdar_dataset, [train_len, val_len]
     )
 
@@ -52,7 +52,7 @@ def main():
 
     # Initialize the model
     model = FOTSModel()
-    print(model.summary())
+    print(model)
 
     loss = FOTSLoss()
 

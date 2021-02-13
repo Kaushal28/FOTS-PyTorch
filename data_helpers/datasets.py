@@ -118,7 +118,6 @@ class ICDARDataset(Dataset):
         # original image size. So all this geo_map should be of the
         # same size.
         geo_map = geo_map[::4, ::4].astype(np.float32)
-        print(geo_map.shape)
         return geo_map
 
     @staticmethod
@@ -188,7 +187,6 @@ class ICDARDataset(Dataset):
         img_padded = np.zeros((max_size, max_size, 3), dtype=np.float32)
         # Copy the original image into new image
         # (basically, new image is padded version of original image).
-        print(img_h, img_w, image.dtype)
         img_padded[:img_h, :img_w, :] = image.copy()
         img_h, img_w, _ = img_padded.shape
 

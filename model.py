@@ -56,7 +56,7 @@ class FOTSModel(nn.Module):
         self.shared_conv.eval()
     
     @property
-    def train(self):
+    def is_training(self):
         """Check whether the FOTS model is in training mode."""
         return (
             self.detector.training
@@ -81,10 +81,8 @@ class FOTSModel(nn.Module):
         # Step 2: Text detection from shared features using detector branch
         per_pixel_preds, loc_features = self.detector(shared_features)
 
-        print(bboxes.shape)
-
         # Step 3: RoIRotate
-        if self.train:
+        if self.is_training:
             rois, lens, indices = self.roirotate(shared_features, bboxes[:, :8], mappings)
             # As mentioned in the paper, for training, the ground truth bboxes will be used
             # because the predicted bboxes can harm the training process.

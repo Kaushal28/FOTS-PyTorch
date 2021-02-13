@@ -63,7 +63,7 @@ class BidirectionalLSTM(nn.Module):
         return output
 
 
-class CRNN(nn.module):
+class CRNN(nn.Module):
     """
     CRNN is Convolutional Recurrent Neural Network. CRNN is typically used for
     text recognition part of OCR. In FOTS also, CRNN is used in text
@@ -133,7 +133,7 @@ class CRNN(nn.module):
             nn.ReLU(True),
 
             # height-max-pool 
-            self.HeightMaxPool(),
+            HeightMaxPool2d(),
 
             # conv_bn_relu
             nn.Conv2d(
@@ -152,7 +152,7 @@ class CRNN(nn.module):
             nn.ReLU(True),
 
             # height-max-pool 
-            self.HeightMaxPool(),
+            HeightMaxPool2d(),
 
             # conv_bn_relu
             nn.Conv2d(
@@ -171,7 +171,7 @@ class CRNN(nn.module):
             nn.ReLU(True),
 
             # height-max-pool 
-            self.HeightMaxPool()
+            HeightMaxPool2d()
         )
     
         self.lstm = BidirectionalLSTM(256, hidden_size, n_classes)
