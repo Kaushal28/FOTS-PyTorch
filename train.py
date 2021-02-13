@@ -20,6 +20,10 @@ def fots_metric(pred, gt):
     return output['method']['precision'], output['method']['recall'], output['method']['hmean']
 
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 def main():
     """Main entry point of train module."""
     # Initialize the dataset
@@ -52,7 +56,9 @@ def main():
 
     # Initialize the model
     model = FOTSModel()
-    print(model)
+
+    # Count trainable parameters
+    print(f'The model has {count_parameters(model):,} trainable parameters.')
 
     loss = FOTSLoss()
 
