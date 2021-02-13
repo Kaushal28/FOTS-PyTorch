@@ -122,7 +122,7 @@ class Train:
                     for i in range(lengths.numel()):
                         l = lengths[i]
                         p = pred[:l, i]
-                        t = self.labelConverter.decode(p, l)
+                        t = self.transcript_encoder.decode(p, l)
                         pred_transcripts.append(t)
                     pred_transcripts = np.array(pred_transcripts)
 
