@@ -29,10 +29,10 @@ class DetectionLoss(nn.Module):
         # 1. IoU loss
         # split the regression map by channel. Each channel has shape 1 * img_size/4 * img_size/4
         top_gt, right_gt, bottom_gt, left_gt, theta_gt = torch.split(
-            y_true_reg, split_size_or_sections=1, axis=1
+            y_true_reg, split_size_or_sections=1, dim=1
         )
         top_pred, right_pred, bottom_pred, left_pred, theta_pred = torch.split(
-            y_pred_reg, split_size_or_sections=1, axis=1
+            y_pred_reg, split_size_or_sections=1, dim=1
         )
 
         # Per pixel area calculation for corresponding bbox

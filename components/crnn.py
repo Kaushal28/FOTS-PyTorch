@@ -44,11 +44,12 @@ class BidirectionalLSTM(nn.Module):
         # compacts all weights into a contiguous chuck of memory
         # Reference: https://stackoverflow.com/q/53231571/5353128
         self.lstm.flatten_parameters()
-        total_length = input.size(1)
+        total_length = x.size(1)
 
         # To optimize the LSTM computations.
         # Reference: https://stackoverflow.com/q/51030782/5353128
-        packed_input = nn.utils.rnn.pack_padded_sequence(x, lengths, batch_first=True)
+        # https://github.com/pytorch/pytorch/issues/43227
+        packed_input = nn.utils.rnn.pack_padded_sequence(x, lengths.cpu(), batch_first=True)
 
         # output shape: (T, b, h * 2) [seq_len, batch_size, num_directions*hidden_size]
         output, _ = self.lstm(packed_input)
@@ -56,7 +57,7 @@ class BidirectionalLSTM(nn.Module):
 
         b, T, h = padded_input.size()
         t_rec = padded_input.reshape(T * b, h)
-        output = self.linear(t_rec)  # (T * b, n_classes)
+        output = self.fc(t_rec)  # (T * b, n_classes)
         output = output.reshape(b, T, -1)
         output = nn.functional.log_softmax(output, dim=-1)  # for CTC loss
 
@@ -181,6 +182,6 @@ class CRNN(nn.Module):
         x = self.cnn(x)
         x = x.squeeze(2)
         x = x.permute(0, 2, 1)
-        x = self.rnn(x, lengths)
+        x = self.lstm(x, lengths)
 
         return x

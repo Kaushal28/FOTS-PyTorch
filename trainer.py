@@ -34,7 +34,7 @@ class Train:
         """
         Calculate evaluation metrics given predictions and ground truths.
         """
-        precious, recall, hmean = self.metric[0](y_pred, y_true)
+        precious, recall, hmean = self.metric(y_pred, y_true)
         return np.array([precious, recall, hmean])
 
     def train_epoch(self, epoch):
@@ -59,7 +59,7 @@ class Train:
             pred_mapping = mapping[indices]
             pred_fns = [image_paths[i] for i in pred_mapping]
 
-            labels, label_lengths = transcript_encoder.encode(transcripts.tolist())
+            labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
             labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
             recog = (labels, label_lengths)
 

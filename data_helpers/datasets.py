@@ -75,7 +75,7 @@ class ICDARDataset(Dataset):
         # shape of geo_map: (img_size/4 * img_size/4 * 5)
         geo_map = self._get_geo_map(image, bboxes)
 
-        return image_path, image, bboxes, transcripts, score_map, geo_map
+        return image_path, image, bboxes.reshape(-1, 8), transcripts, score_map, geo_map
 
     def _get_geo_map(self, image, bboxes):
         """

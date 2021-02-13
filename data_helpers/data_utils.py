@@ -29,6 +29,7 @@ def icdar_collate(batch):
             texts.append(txt)
             bboxs.append(box)
 
+    mapping = np.array(mapping)
     texts = np.array(texts)
     bboxs = np.stack(bboxs, axis=0)
     # bboxs = np.concatenate([bboxs, np.ones((len(bboxs), 1))], axis = 1).astype(np.float32)

@@ -60,10 +60,14 @@ class SharedConvolutions(nn.Module):
 
     def _extract_features(self, x):
         """Extract features from given input and backbone."""
-        res5 = self.back_bone.layer4(x)
-        res4 = self.back_bone.layer3(x)
-        res3 = self.back_bone.layer2(x)
+        x = self.back_bone.conv1(x)
+        x = self.back_bone.bn1(x)
+        x = self.back_bone.relu(x)
+        x = self.back_bone.maxpool(x)
         res2 = self.back_bone.layer1(x)
+        res3 = self.back_bone.layer2(res2)
+        res4 = self.back_bone.layer3(res3)
+        res5 = self.back_bone.layer4(res4)
 
         return res5, res4, res3, res2
     
