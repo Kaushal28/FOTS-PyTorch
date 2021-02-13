@@ -85,6 +85,7 @@ class ConcatLayer(nn.Module):
     """Concatenates given feature maps."""
     
     def __init__(self, in_channels, out_channels):
+        super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.bn1 = nn.BatchNorm2d(out_channels, momentum=0.003)
 
