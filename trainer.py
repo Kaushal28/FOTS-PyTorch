@@ -20,7 +20,7 @@ class Train:
         self.model = model
         self.train_iterator = train_iterator
         self.valid_iterator = valid_iterator
-        self.optimizertranscript_encoder = optimizer
+        self.optimizer = optimizer
         self.transcript_encoder = TranscriptEncoder(classes)
         self.metric = metric
         self.epochs = epochs
