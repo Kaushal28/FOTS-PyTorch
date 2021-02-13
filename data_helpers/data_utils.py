@@ -31,6 +31,6 @@ def icdar_collate(batch):
 
     texts = np.array(texts)
     bboxs = np.stack(bboxs, axis=0)
-    bboxs = np.concatenate([bboxs, np.ones((len(bboxs), 1))], axis = 1).astype(np.float32)
+    # bboxs = np.concatenate([bboxs, np.ones((len(bboxs), 1))], axis = 1).astype(np.float32)
 
     return image_paths, images, bboxs, texts, score_maps, geo_maps, mapping
