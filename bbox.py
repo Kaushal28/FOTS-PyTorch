@@ -4,7 +4,7 @@ import math
 import os
 import numpy as np
 
-from . import lanms
+import lanms
 import torch
 
 

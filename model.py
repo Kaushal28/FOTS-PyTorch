@@ -12,6 +12,8 @@ from components.crnn import CRNN
 
 from utils import classes
 
+from bbox import Toolbox
+
 
 class FOTSModel(nn.Module):
     """
@@ -32,7 +34,6 @@ class FOTSModel(nn.Module):
         self.shared_conv = SharedConvolutions(back_bone=back_bone)
 
         n_class = len(classes) + 1  # 1 for "other" class
-
         self.recognizer = Recognizer(n_class)
         self.detector = Detector()
         self.roirotate = ROIRotate()
@@ -83,7 +84,7 @@ class FOTSModel(nn.Module):
 
         # Step 3: RoIRotate
         if self.is_training:
-            rois, lens, indices = self.roirotate(shared_features, bboxes[:, :8], mappings)
+            rois, lengths, indices = self.roirotate(shared_features, bboxes[:, :8], mappings)
             # As mentioned in the paper, for training, the ground truth bboxes will be used
             # because the predicted bboxes can harm the training process.
             pred_mapping = mappings
@@ -113,7 +114,7 @@ class FOTSModel(nn.Module):
             else:
                 return per_pixel_preds, loc_features, (None, None), pred_boxes, pred_mapping, None
 
-        lens = torch.tensor(lens).to(device)
+        lens = torch.tensor(lengths).to(device)
         preds = self.recognizer(rois, lens)
         preds = preds.permute(1, 0, 2) # B, T, C -> T, B, C
 
