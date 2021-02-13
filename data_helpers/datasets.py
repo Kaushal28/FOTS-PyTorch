@@ -227,7 +227,7 @@ class ICDARDataset(Dataset):
             # where 4 is four coordinates of rectangle and 2 is for x and y components
             # of each coordinate
             bboxes = list(map(lambda str: str.split(',')[:-1], content))
-            bboxes = np.array([np.array(bbox).reshape(4, 2) for bbox in bboxes]).astype(np.float32)
+            bboxes = np.array([np.array(bbox)[:8].reshape(4, 2) for bbox in bboxes]).astype(np.float32)
         
             transcript = np.array(
                 list(map(lambda str: str.split(',')[-1], content)), dtype='object'
