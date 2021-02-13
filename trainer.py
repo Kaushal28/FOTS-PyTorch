@@ -52,7 +52,7 @@ class Train:
             self.optimizer.zero_grad()
             
             # Forward pass
-            pred_score_map, pred_geo_map, pred_recog, pred_boxes, pred_mapping, indices = self.model(images, bboxs)
+            pred_score_map, pred_geo_map, pred_recog, pred_boxes, pred_mapping, indices = self.model(images, bboxs, mapping)
 
             transcripts = transcripts[indices]
             pred_boxes = pred_boxes[indices]
@@ -108,7 +108,7 @@ class Train:
                 geo_map = geo_map.to(self.device)
 
                 # Forward pass
-                pred_score_map, pred_geo_map, pred_recog, pred_boxes, pred_mapping, indices = self.model(images, bboxs)
+                pred_score_map, pred_geo_map, pred_recog, pred_boxes, pred_mapping, indices = self.model(images, bboxs, mapping)
 
                 pred_transcripts = []
                 pred_fns = []
