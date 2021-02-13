@@ -95,7 +95,7 @@ class FOTSModel(nn.Module):
 
             timer = {'net': 0, 'restore': 0, 'nms': 0}
 
-            pred_boxes = []
+            pred_bboxes = []
             pred_mapping = []
             for i in range(score.shape[0]):
                 s = score[i, :, :, 0]
@@ -105,14 +105,14 @@ class FOTSModel(nn.Module):
 
                 if len(bb) > 0:
                     pred_mapping.append(np.array([i] * bb_size))
-                    pred_boxes.append(bb)
+                    pred_bboxes.append(bb)
 
             if len(pred_mapping) > 0:
-                pred_boxes = np.concatenate(pred_boxes)
+                pred_bboxes = np.concatenate(pred_bboxes)
                 pred_mapping = np.concatenate(pred_mapping)
-                rois, lengths, indices = self.roirotate(shared_features, pred_boxes[:, :8], pred_mapping)
+                rois, lengths, indices = self.roirotate(shared_features, pred_bboxes[:, :8], pred_mapping)
             else:
-                return per_pixel_preds, loc_features, (None, None), pred_boxes, pred_mapping, None
+                return per_pixel_preds, loc_features, (None, None), pred_bboxes, pred_mapping, None
 
         lens = torch.tensor(lengths).to(device)
         preds = self.recognizer(rois, lens)
