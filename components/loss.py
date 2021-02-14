@@ -93,7 +93,7 @@ class RecognitionLoss(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.ctc_loss = CTCLoss()
+        self.ctc_loss = CTCLoss(zero_infinity=True)
     
     def forward(self, *x):
         gt, pred = x[0], x[1]
