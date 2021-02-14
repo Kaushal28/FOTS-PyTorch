@@ -33,7 +33,7 @@ class FOTSModel(nn.Module):
         back_bone =  pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
         self.shared_conv = SharedConvolutions(back_bone=back_bone)
 
-        n_class = len(classes) + 1  # 1 for "other" class
+        n_class = len(classes) + 1  # 1 for "ctc blank" token (0)
         self.recognizer = Recognizer(n_class)
         self.detector = Detector()
         self.roirotate = ROIRotate()

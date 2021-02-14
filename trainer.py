@@ -70,7 +70,7 @@ class Train:
             self.optimizer.step()
 
             epoch_loss += loss.item()
-
+            print(f'### LOSS: {loss.item()}')
             pred_transcripts = []
             if len(pred_mapping) > 0:
                 pred, lengths = pred_recog

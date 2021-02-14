@@ -56,6 +56,7 @@ class DetectionLoss(nn.Module):
 
         # Regression loss. It consists of IoU loss + bbox rotation angle loss
         lam_theta = 10  # from paper TODO: Make this configurable
+        print(f'iou: {torch.isinf(iou_loss).sum()}, angle: {torch.isinf(angle_loss).sum()}, clf: {clf_loss}')
         regression_loss = iou_loss + lam_theta*angle_loss
 
         # For regression loss, only consider the loss for the pixels where the ground truth
@@ -124,9 +125,11 @@ class FOTSLoss(nn.Module):
         detection_loss = self.det_loss(y_true_clf, y_pred_clf, y_true_reg, y_pred_reg)
 
         # Calculate only if something was supposed to recognized
+        recognition_loss = 0
         if y_true_recog:
             recognition_loss = self.rec_loss(y_true_recog, y_pred_recog)
         
+        print(f'rec: {recognition_loss}')
         # combine rec. loss and det. loss using lambda recognition.
         lam_recog = 1  # value from paper TODO: Make this configurable
         return detection_loss + lam_recog * recognition_loss

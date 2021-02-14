@@ -31,7 +31,7 @@ def main():
     icdar_dataset = ICDARDataset('/content/ch4_training_images', '/content/ch4_training_localization_transcription_gt')
 
     # Train test split
-    val_size = 0.98
+    val_size = 0.12
     val_len = int(val_size * len(icdar_dataset))
     train_len = len(icdar_dataset) - val_len
     icdar_train_dataset, icdar_val_dataset = torch.utils.data.random_split(
