@@ -153,6 +153,9 @@ def evaluate_method(pred: Tuple[dict], gt: Tuple[dict], evaluationParams:dict) -
             # special characters in GT are allowed only at initial or final position
             if (transGt == transDet):
                 return True
+            
+            if len(transGt) == 0:
+                return False
 
             if specialCharacters.find(transGt[0]) > -1:
                 if transGt[1:] == transDet:
