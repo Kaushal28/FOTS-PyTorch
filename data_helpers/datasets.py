@@ -148,6 +148,8 @@ class ICDARDataset(Dataset):
         p1 and p2.
         """
         # Reference: https://stackoverflow.com/a/39840218/5353128
+        if np.linalg.norm(p2-p1) == 0:
+            return 0
         return np.linalg.norm(np.cross(p2-p1, p1-p3)) / np.linalg.norm(p2-p1)
 
     def _get_score_map(self, image, bboxes):
