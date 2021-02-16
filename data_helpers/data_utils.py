@@ -210,7 +210,7 @@ def generate_rbbox(image, bboxes, transcripts):
     Generate RBOX (Rotated bbox) as per this paper:
     https://arxiv.org/pdf/1704.03155.pdf
     """
-    img_h, img_w = image.shape
+    img_h, img_w, _ = image.shape
     # geo_map is pixel/bbox location map which stores distances of
     # pixels from top, right, bottom and left from corresponding bbox edges
     # and angle of rotation of the bbox (4+1=5 channels).
@@ -238,7 +238,7 @@ def generate_rbbox(image, bboxes, transcripts):
             )
         
         shrink_ratio = 0.3  # from papar
-        shrunk_bbox = shrink_bbox(bbox.copy(), np.array(reference_lens), shrink_ratio)
+        shrunk_bbox = shrink_bbox(bbox.copy(), np.array(reference_lens), shrink_ratio).astype(np.int32)[np.newaxis, :, :]
 
         cv2.fillPoly(score_map, shrunk_bbox, 1)
         cv2.fillPoly(bbox_mask, shrunk_bbox, bbox_idx+1)
@@ -250,6 +250,12 @@ def generate_rbbox(image, bboxes, transcripts):
         # Therefore, to get the angle of rotation and pixel distances from the
         # bbox edges, fit a minimum area rectangle to bbox quadrangle.
         rectangle = min_area_bbox(bbox)
+        # Convert set of vertices to numpy array
+        arr = []
+        for idx in rectangle.corner_points:
+            arr.append(np.array(idx))
+
+        rectangle = np.vstack(arr)
         rectangle, rotation_angle = _align_vertices(rectangle)
         final_bboxes.append(rectangle)  # TODO: Filter very small bboxes here
 
@@ -268,4 +274,10 @@ def generate_rbbox(image, bboxes, transcripts):
             # bbox rotation angle
             geo_map[bbox_y, bbox_x, 4] = rotation_angle
 
-    return score_map, geo_map, final_bboxes
+    # Size of the feature map from shared convolutions is 1/4th of
+    # original image size. So all this geo_map should be of the
+    # same size.
+    score_map = score_map[::4, ::4, np.newaxis].astype(np.float32)
+    geo_map = geo_map[::4, ::4].astype(np.float32)
+
+    return score_map, geo_map, np.vstack(final_bboxes)
