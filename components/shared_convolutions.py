@@ -33,6 +33,10 @@ class SharedConvolutions(nn.Module):
     
     def forward(self, x):
         """Module's forward pass."""
+
+        # Subtract the mean from the image.
+        x = self._mean_image_subtraction(x)
+
         # First extract features using back bone network.
         res5, res4, res3, res2 = self._extract_features(x)
 
@@ -71,6 +75,18 @@ class SharedConvolutions(nn.Module):
 
         return res5, res4, res3, res2
     
+    def _mean_image_subtraction(self, images, means=[123.68, 116.78, 103.94]):
+        """
+        Image Standardization. Subtracts the mean from the given image.
+        """
+        num_channels = images.data.shape[1]
+        if len(means) != num_channels:
+            raise ValueError('len(means) must match the number of channels')
+        for i in range(num_channels):
+            images.data[:, i, :, :] -= means[i]
+
+        return images
+
     def _deconv(self, feature):
         """
         Apply deconv operation (inverse of pooling) on given feature map.

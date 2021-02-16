@@ -7,8 +7,7 @@ import cv2
 
 import numpy as np
 import pandas as pd
-
-import scipy.io as sio
+import scipy.io
 
 from data_utils import generate_rbbox
 
@@ -129,7 +128,7 @@ class ICDARDataset(Dataset):
         # Load the image
         image = cv2.imread(os.path.join(self.image_dir, image_path), cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-        image /= 255.0  # Normalize
+        # image /= 255.0  # Normalize
 
         # Resize the image to required size
         image, scale_x, scale_y = self._resize_image(image, self.image_size)
@@ -158,3 +157,66 @@ class ICDARDataset(Dataset):
         bboxes[:, :, 1] *= scale_y  # scale y coordinate
         
         return image, bboxes, transcript
+
+
+class Synth800kDataset(Dataset):
+    """
+    Define Synth800K Dataset based on its format.
+    """
+
+    def __init__(self, image_dir, gt_path, image_size=512):
+        """Constructor."""
+        super().__init__()
+
+        self.image_dir = image_dir  # Path of the dir where all the images are stored
+        self.gt_path = gt_path  # Path of gt.mat object
+        self.image_size = image_size  # Size of images for training
+
+        if (
+            not self.image_dir or
+            not self.gt_path or
+            not os.path.isdir(self.image_dir) or
+            not os.path.isfile(self.gt_path)
+        ):
+            raise ValueError("Some of the parameter(s) is/are invalid.")
+
+        # Load the ground truth matrix/object
+        # Reference: https://www.robots.ox.ac.uk/~vgg/data/scenetext/readme.txt
+        mat = scipy.io.loadmat(self.gt_path)
+
+        # Convert to dataframe for ease of operations
+        data_df = pd.DataFrame({
+            'imnames': np.concatenate(mat['imnames'][0], axis=0),
+            'wordBB': np.concatenate(mat['wordBB'], axis=0),
+            'txt': np.concatenate(mat['txt'], axis=0)
+        })
+
+        # Filter out the gt dataframe if training on subset of images
+        image_ids = os.listdir(self.image_dir)
+        data_df = data_df[data_df['imnames'].isin(image_ids)].reset_index(drop=True)
+
+        # Append the image dir (base dir) name in imnames
+        data_df['imnames'] = self.image_dir + os.sep + data_df['imnames'].astype(str)
+
+    def __len__(self):
+        """Define the length of the dataset."""
+        return len(self.data_df)
+    
+    def __getitem__(self, index):
+        """
+        Retrieve the image and corresponding label at given index.
+        
+        The ground truth generation is based on this paper: (EAST)
+        https://arxiv.org/pdf/1704.03155.pdf (Section 3.3 Label Generation).
+
+        The first step is to shrink the given bbox by calculating
+        reference lengths for each bbox vertex. The shrunk version
+        of original bbox will be the actual bbox ground truth.
+
+        Then a rotated rectangle is generated that covers the original bbox
+        with minimal area. The angle of this rotated rectangle is considered
+        as ground truths.
+        """
+        # data = self.data_df.iloc[index]
+        # image_path, gt_path = data["imnames"], data["gt_path"]
+        pass
