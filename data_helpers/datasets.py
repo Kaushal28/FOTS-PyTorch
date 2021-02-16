@@ -10,6 +10,7 @@ import pandas as pd
 
 import scipy.io as sio
 
+from data_utils import generate_rbbox
 
 # TODO: Training masks and ignore bboxes having ### for training
 class ICDARDataset(Dataset):
@@ -58,7 +59,20 @@ class ICDARDataset(Dataset):
         return len(self.data_df)
 
     def __getitem__(self, index):
-        """Retrieve the image and corresponding label at given index."""
+        """
+        Retrieve the image and corresponding label at given index.
+        
+        The ground truth generation is based on this paper: (EAST)
+        https://arxiv.org/pdf/1704.03155.pdf (Section 3.3 Label Generation).
+
+        The first step is to shrink the given bbox by calculating
+        reference lengths for each bbox vertex. The shrunk version
+        of original bbox will be the actual bbox ground truth.
+
+        Then a rotated rectangle is generated that covers the original bbox
+        with minimal area. The angle of this rotated rectangle is considered
+        as ground truths.
+        """
         data = self.data_df.iloc[index]
         image_path, gt_path = data["image_path"], data["gt_path"]
 
@@ -69,110 +83,12 @@ class ICDARDataset(Dataset):
         # (distance of the pixel from top, bottom, left and right sides of bbox)
         # and bbox angle map. These are required by text detection branch of FOTS
         # shape of score map: (img_size/4 * img_size/4 * 1)
-        score_map = self._get_score_map(image, bboxes)
 
         # Get pixel location/geography map
         # shape of geo_map: (img_size/4 * img_size/4 * 5)
-        geo_map = self._get_geo_map(image, bboxes)
+        score_map, geo_map, bboxes = generate_rbbox(image, bboxes, transcripts)
 
         return image_path, image, bboxes.reshape(-1, 8), transcripts, score_map, geo_map
-
-    def _get_geo_map(self, image, bboxes):
-        """
-        For each pixel in the text bbox, get the following 5 channels:
-        distances to top, bottom, left, right sides of the bounding box that
-        contains the pixel. The last channel contains the angle/orientation 
-        info. for each bbox. This is called geography map.
-        """
-        img_height, img_width, _ = image.shape
-        # First initialize the geomap with all zeros
-        geo_map = np.zeros((img_height, img_width, 5), dtype = np.float32)
-
-        # Helper bbox mask layer
-        bbox_mask = np.zeros((img_height, img_width), dtype=np.uint8)
-
-        # Iterate over each bbox and fill geo_map
-        for idx, bbox in enumerate(bboxes):
-            cv2.fillPoly(bbox_mask, [bbox.astype(np.int32)], idx+1)
-
-            # Get all the bbox points for which the distance is to be
-            # calculated.
-            bbox_points = np.argwhere(bbox_mask == idx+1)
-
-            # for each bbox point, calc. 4 distances and rotation and fill the
-            # geo map.
-            for bbox_y, bbox_x in bbox_points:
-                bbox_point = np.array([bbox_x, bbox_y], dtype=np.float32)
-                # distance from top
-                geo_map[bbox_y, bbox_x, 0] = self._point_to_line_dist(bbox[0], bbox[1], bbox_point)
-                # distance from right
-                geo_map[bbox_y, bbox_x, 1] = self._point_to_line_dist(bbox[1], bbox[2], bbox_point)
-                # distance from bottom
-                geo_map[bbox_y, bbox_x, 2] = self._point_to_line_dist(bbox[2], bbox[3], bbox_point)
-                # distance from left
-                geo_map[bbox_y, bbox_x, 3] = self._point_to_line_dist(bbox[3], bbox[0], bbox_point)
-                # # bbox rotation angle
-                geo_map[bbox_y, bbox_x, 4] = self._bbox_angle(bbox)
-
-        # Size of the feature map from shared convolutions is 1/4th of
-        # original image size. So all this geo_map should be of the
-        # same size.
-        geo_map = geo_map[::4, ::4].astype(np.float32)
-        return geo_map
-
-    @staticmethod
-    def _bbox_angle(bbox):
-        """Find the angle of rotation of given bbox."""
-        # Considering bottom edge of rectangle for determining the angle.
-        p0, p1 = bbox[2], bbox[3]
-
-        # Reference: https://stackoverflow.com/a/2676810/5353128
-        delta_x = p0[0] - p1[0]
-        delta_y = p1[1] - p0[1]
-        theta = np.degrees(np.arctan2(delta_y, delta_x))
-
-        # Keep the range of theta in -90 to 90
-        if theta < 0:
-            theta = 180 - np.abs(theta)
-        
-        if theta > 90:
-            theta = theta - 180
-
-        return theta
-
-    
-    @staticmethod
-    def _point_to_line_dist(p1, p2, p3):
-        """
-        Find perpendicular distance from point p3 to line passing through
-        p1 and p2.
-        """
-        # Reference: https://stackoverflow.com/a/39840218/5353128
-        if np.linalg.norm(p2-p1) == 0:
-            return 0
-        return np.linalg.norm(np.cross(p2-p1, p1-p3)) / np.linalg.norm(p2-p1)
-
-    def _get_score_map(self, image, bboxes):
-        """
-        Extract score map for given image and corresponding bbox info.
-        Score map represents whether the pixel is part of text bbox or not.
-        """
-        # First create empty score map same as the size of image
-        img_height, img_width, _ = image.shape
-        score_map = np.zeros((img_height, img_width), dtype=np.uint8)
-
-        # Based on bboxes, fill the score map to 1. This will create 2 class
-        # classification label which indicates whether the text exists for
-        # each pixel.
-        for bbox in bboxes:
-            cv2.fillPoly(score_map, [bbox.astype(np.int32)], 1)
-        
-        # Size of the feature map from shared convolutions is 1/4th of
-        # original image size. So all these label maps should be of the
-        # same size.
-        score_map = score_map[::4, ::4, np.newaxis].astype(np.float32)
-
-        return score_map
     
     @staticmethod
     def _resize_image(image, image_size):

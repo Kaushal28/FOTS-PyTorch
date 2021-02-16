@@ -1,2 +1,3 @@
 pretrainedmodels
 torch
+scipy
