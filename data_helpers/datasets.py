@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import torch
 from torch.utils.data import Dataset
@@ -9,7 +10,7 @@ import numpy as np
 import pandas as pd
 import scipy.io
 
-from data_utils import generate_rbbox
+from data_utils import generate_rbbox, resize_image
 
 # TODO: Training masks and ignore bboxes having ### for training
 class ICDARDataset(Dataset):
@@ -89,37 +90,6 @@ class ICDARDataset(Dataset):
 
         return image_path, image, bboxes.reshape(-1, 8), transcripts, score_map, geo_map
     
-    @staticmethod
-    def _resize_image(image, image_size):
-        """
-        Resize the given image to image_size * image_size
-        shaped square image.
-        """
-        # First pad the given image to match the image_size or image's larger
-        # side (whichever is larger). [Create a square image]
-        img_h, img_w, _ = image.shape
-        max_size = max(image_size, img_w, img_h)
-
-        # Create new square image of appropriate size
-        img_padded = np.zeros((max_size, max_size, 3), dtype=np.float32)
-        # Copy the original image into new image
-        # (basically, new image is padded version of original image).
-        img_padded[:img_h, :img_w, :] = image.copy()
-        img_h, img_w, _ = img_padded.shape
-
-        # if image_size higher that image sides, then the current padded
-        # image will be of size image_size * image_size. But if not, resize the
-        # padded iamge. This is done to keep the aspect ratio same even after
-        # square resize.
-        img_padded = cv2.resize(img_padded, dsize=(image_size, image_size))
-
-        # We need the ratio of resized image width and heights to its
-        # older dimensions to scale the bounding boxes accordingly
-        scale_x = image_size / img_w
-        scale_y = image_size / img_h
-
-        return img_padded, scale_x, scale_y
-    
     def _load_from_file(self, image_path, gt_path):
         """
         Load the image and corresponding ground truth from
@@ -131,7 +101,7 @@ class ICDARDataset(Dataset):
         # image /= 255.0  # Normalize
 
         # Resize the image to required size
-        image, scale_x, scale_y = self._resize_image(image, self.image_size)
+        image, scale_x, scale_y = resize_image(image, self.image_size)
 
         # Extract ground truth bboxes
         # Reference: https://stackoverflow.com/a/49150749/5353128
@@ -152,10 +122,10 @@ class ICDARDataset(Dataset):
         
         # Scale the bounding boxes as per the resized image
         # This is required because after resize, the position of the texts
-        # would have changed
+        # would have changed. Shape of bboxes: n_words * 4 * 2
         bboxes[:, :, 0] *= scale_x  # scale x coordinate
         bboxes[:, :, 1] *= scale_y  # scale y coordinate
-        
+
         return image, bboxes, transcript
 
 
@@ -185,18 +155,21 @@ class Synth800kDataset(Dataset):
         mat = scipy.io.loadmat(self.gt_path)
 
         # Convert to dataframe for ease of operations
-        data_df = pd.DataFrame({
+        self.data_df = pd.DataFrame({
             'imnames': np.concatenate(mat['imnames'][0], axis=0),
             'wordBB': np.concatenate(mat['wordBB'], axis=0),
             'txt': np.concatenate(mat['txt'], axis=0)
         })
 
+        # Clean up
+        del mat
+
         # Filter out the gt dataframe if training on subset of images
-        image_ids = os.listdir(self.image_dir)
-        data_df = data_df[data_df['imnames'].isin(image_ids)].reset_index(drop=True)
+        image_ids = list(map(str, list(Path(self.image_dir).rglob('*.jpg'))))
 
         # Append the image dir (base dir) name in imnames
-        data_df['imnames'] = self.image_dir + os.sep + data_df['imnames'].astype(str)
+        self.data_df['imnames'] = self.image_dir + os.sep + self.data_df['imnames'].astype(str)
+        self.data_df = self.data_df[self.data_df['imnames'].isin(image_ids)].reset_index(drop=True)
 
     def __len__(self):
         """Define the length of the dataset."""
@@ -217,6 +190,40 @@ class Synth800kDataset(Dataset):
         with minimal area. The angle of this rotated rectangle is considered
         as ground truths.
         """
-        # data = self.data_df.iloc[index]
-        # image_path, gt_path = data["imnames"], data["gt_path"]
-        pass
+        data = self.data_df.iloc[index]
+        image_path, bboxes, transcripts = data["imnames"], data["wordBB"], data["txt"]
+
+        # Get raw input image (resized)
+        image, bboxes = self._load_from_file(image_path, bboxes)
+
+        transcripts = list(map(str.strip, transcripts))  # TODO: Filter characters which are not in classes.
+
+        # Extract score map (per pixel gt), pixel location map
+        # (distance of the pixel from top, bottom, left and right sides of bbox)
+        # and bbox angle map. These are required by text detection branch of FOTS
+        # shape of score map: (img_size/4 * img_size/4 * 1)
+
+        # Get pixel location/geography map
+        # shape of geo_map: (img_size/4 * img_size/4 * 5)
+        score_map, geo_map, bboxes = generate_rbbox(image, bboxes, transcripts)
+
+        return image_path, image, bboxes.reshape(-1, 8), transcripts, score_map, geo_map
+    
+    def _load_from_file(self, image_path, bboxes):
+        """Load the image from the file using given path."""
+        # Load the image
+        image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
+        # image /= 255.0  # Normalize
+
+        # Resize the image to required size
+        image, scale_x, scale_y = resize_image(image, self.image_size)
+
+        # Scale the bounding boxes as per the resized image
+        # This is required because after resize, the position of the texts
+        # would have changed. Bboxes shape: 2 * 4 * n_words
+        bboxes[0, :, :] *= scale_x  # scale x coordinate
+        bboxes[1, :, :] *= scale_y  # scale y coordinate
+        
+        bboxes = np.moveaxis(bboxes, [0, 2], [2, 0])
+        return image, bboxes
