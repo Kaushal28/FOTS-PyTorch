@@ -4,7 +4,7 @@ import cv2
 
 import torch
 
-from shapely.geometry import Polygon
+from utilities.min_bbox import minimum_bounding_rectangle
 
 def icdar_collate(batch):
     """
@@ -147,51 +147,6 @@ def _point_to_line_dist(p1, p2, p3):
     return np.linalg.norm(np.cross(p2 - p1, p1 - p3)) / np.linalg.norm(p2 - p1)
 
 
-def _bbox_angle(bbox):
-    """
-    Find the angle of rotation of given bbox.
-
-    As mentioned in the EAST paper (https://arxiv.org/pdf/1704.03155.pdf),
-    the bbox angle ground truth will the the angle between the horizontal
-    line and bottom edge of the given bbox (rectangle).
-    """
-    # Get the bottom edge
-    p2, p3 = bbox[2], bbox[3]
-    # The angle of any line can be given by tan-1((y2-y1) / (x2-x1))
-    return np.arctan2(p2[1] - p3[1], p2[0] - p3[0])
-
-
-def fit_line(p1, p2):
-    # fit a line ax+by+c = 0
-    if p1[0] == p1[1]:
-        return [1., 0., -p1[0]]
-    else:
-        [k, b] = np.polyfit(p1, p2, deg = 1)
-        return [k, -1., b]
-
-
-def line_cross_point(line1, line2):
-    # line1 0= ax+by+c, compute the cross point of line1 and line2
-    if line1[0] != 0 and line1[0] == line2[0]:
-        print('Cross point does not exist')
-        return None
-    if line1[0] == 0 and line2[0] == 0:
-        print('Cross point does not exist')
-        return None
-    if line1[1] == 0:
-        x = -line1[2]
-        y = line2[0] * x + line2[2]
-    elif line2[1] == 0:
-        x = -line2[2]
-        y = line1[0] * x + line1[2]
-    else:
-        k1, _, b1 = line1
-        k2, _, b2 = line2
-        x = -(b1 - b2) / (k1 - k2)
-        y = k1 * x + b1
-    return np.array([x, y], dtype = np.float32)
-
-
 def _align_vertices(bbox):
     """
     Align (sort) the vertices of the given bbox (rectangle) in such a way
@@ -234,76 +189,6 @@ def _align_vertices(bbox):
             p1_index = (p3_index + 2) % 4
             p2_index = (p3_index + 3) % 4
             return bbox[[p0_index, p1_index, p2_index, p3_index]], angle
-
-
-def line_verticle(line, point):
-    # get the verticle line from line across point
-    if line[1] == 0:
-        verticle = [0, -1, point[1]]
-    else:
-        if line[0] == 0:
-            verticle = [1, 0, -point[0]]
-        else:
-            verticle = [-1. / line[0], -1, point[1] - (-1 / line[0] * point[0])]
-    return verticle
-
-
-def rectangle_from_parallelogram(poly):
-    '''
-    fit a rectangle from a parallelogram
-    :param poly:
-    :return:
-    '''
-    p0, p1, p2, p3 = poly
-    angle_p0 = np.arccos(np.dot(p1 - p0, p3 - p0) / (np.linalg.norm(p0 - p1) * np.linalg.norm(p3 - p0)))
-    if angle_p0 < 0.5 * np.pi:
-        if np.linalg.norm(p0 - p1) > np.linalg.norm(p0 - p3):
-            # p0 and p2
-            ## p0
-            p2p3 = fit_line([p2[0], p3[0]], [p2[1], p3[1]])
-            p2p3_verticle = line_verticle(p2p3, p0)
-
-            new_p3 = line_cross_point(p2p3, p2p3_verticle)
-            ## p2
-            p0p1 = fit_line([p0[0], p1[0]], [p0[1], p1[1]])
-            p0p1_verticle = line_verticle(p0p1, p2)
-
-            new_p1 = line_cross_point(p0p1, p0p1_verticle)
-            return np.array([p0, new_p1, p2, new_p3], dtype = np.float32)
-        else:
-            p1p2 = fit_line([p1[0], p2[0]], [p1[1], p2[1]])
-            p1p2_verticle = line_verticle(p1p2, p0)
-
-            new_p1 = line_cross_point(p1p2, p1p2_verticle)
-            p0p3 = fit_line([p0[0], p3[0]], [p0[1], p3[1]])
-            p0p3_verticle = line_verticle(p0p3, p2)
-
-            new_p3 = line_cross_point(p0p3, p0p3_verticle)
-            return np.array([p0, new_p1, p2, new_p3], dtype = np.float32)
-    else:
-        if np.linalg.norm(p0 - p1) > np.linalg.norm(p0 - p3):
-            # p1 and p3
-            ## p1
-            p2p3 = fit_line([p2[0], p3[0]], [p2[1], p3[1]])
-            p2p3_verticle = line_verticle(p2p3, p1)
-
-            new_p2 = line_cross_point(p2p3, p2p3_verticle)
-            ## p3
-            p0p1 = fit_line([p0[0], p1[0]], [p0[1], p1[1]])
-            p0p1_verticle = line_verticle(p0p1, p3)
-
-            new_p0 = line_cross_point(p0p1, p0p1_verticle)
-            return np.array([new_p0, p1, new_p2, p3], dtype = np.float32)
-        else:
-            p0p3 = fit_line([p0[0], p3[0]], [p0[1], p3[1]])
-            p0p3_verticle = line_verticle(p0p3, p1)
-
-            new_p0 = line_cross_point(p0p3, p0p3_verticle)
-            p1p2 = fit_line([p1[0], p2[0]], [p1[1], p2[1]])
-            p1p2_verticle = line_verticle(p1p2, p3)
-
-            new_p2 = line_cross_point(p1p2, p1p2_verticle)
-            return np.array([new_p0, p1, new_p2, p3], dtype = np.float32)
 
 
 def generate_rbbox(image, bboxes, transcripts):
@@ -350,80 +235,9 @@ def generate_rbbox(image, bboxes, transcripts):
         # Now, as per the assumption, the bbox can be of any shape (quadrangle).
         # Therefore, to get the angle of rotation and pixel distances from the
         # bbox edges, fit a minimum area rectangle to bbox quadrangle.
-        fitted_parallelograms = []
-        for i in range(4):
-            p0 = bbox[i]
-            p1 = bbox[(i + 1) % 4]
-            p2 = bbox[(i + 2) % 4]
-            p3 = bbox[(i + 3) % 4]
-            edge = fit_line([p0[0], p1[0]], [p0[1], p1[1]])
-            backward_edge = fit_line([p0[0], p3[0]], [p0[1], p3[1]])
-            forward_edge = fit_line([p1[0], p2[0]], [p1[1], p2[1]])
-            if _point_to_line_dist(p0, p1, p2) > _point_to_line_dist(p0, p1, p3):
-                # 平行线经过p2
-                if edge[1] == 0:
-                    edge_opposite = [1, 0, -p2[0]]
-                else:
-                    edge_opposite = [edge[0], -1, p2[1] - edge[0] * p2[0]]
-            else:
-                # 经过p3
-                if edge[1] == 0:
-                    edge_opposite = [1, 0, -p3[0]]
-                else:
-                    edge_opposite = [edge[0], -1, p3[1] - edge[0] * p3[0]]
-            # move forward edge
-            new_p0 = p0
-            new_p1 = p1
-            new_p2 = p2
-            new_p3 = p3
-            new_p2 = line_cross_point(forward_edge, edge_opposite)
-            if _point_to_line_dist(p1, new_p2, p0) > _point_to_line_dist(p1, new_p2, p3):
-                # across p0
-                if forward_edge[1] == 0:
-                    forward_opposite = [1, 0, -p0[0]]
-                else:
-                    forward_opposite = [forward_edge[0], -1, p0[1] - forward_edge[0] * p0[0]]
-            else:
-                # across p3
-                if forward_edge[1] == 0:
-                    forward_opposite = [1, 0, -p3[0]]
-                else:
-                    forward_opposite = [forward_edge[0], -1, p3[1] - forward_edge[0] * p3[0]]
-            new_p0 = line_cross_point(forward_opposite, edge)
-            new_p3 = line_cross_point(forward_opposite, edge_opposite)
-            fitted_parallelograms.append([new_p0, new_p1, new_p2, new_p3, new_p0])
-            # or move backward edge
-            new_p0 = p0
-            new_p1 = p1
-            new_p2 = p2
-            new_p3 = p3
-            new_p3 = line_cross_point(backward_edge, edge_opposite)
-            if _point_to_line_dist(p0, p3, p1) > _point_to_line_dist(p0, p3, p2):
-                # across p1
-                if backward_edge[1] == 0:
-                    backward_opposite = [1, 0, -p1[0]]
-                else:
-                    backward_opposite = [backward_edge[0], -1, p1[1] - backward_edge[0] * p1[0]]
-            else:
-                # across p2
-                if backward_edge[1] == 0:
-                    backward_opposite = [1, 0, -p2[0]]
-                else:
-                    backward_opposite = [backward_edge[0], -1, p2[1] - backward_edge[0] * p2[0]]
-            new_p1 = line_cross_point(backward_opposite, edge)
-            new_p2 = line_cross_point(backward_opposite, edge_opposite)
-            fitted_parallelograms.append([new_p0, new_p1, new_p2, new_p3, new_p0])
-        areas = [Polygon(t).area for t in fitted_parallelograms]
-        parallelogram = np.array(fitted_parallelograms[np.argmin(areas)][:-1], dtype = np.float32)
-        # sort thie polygon
-        parallelogram_coord_sum = np.sum(parallelogram, axis = 1)
-        min_coord_idx = np.argmin(parallelogram_coord_sum)
-        parallelogram = parallelogram[
-            [min_coord_idx, (min_coord_idx + 1) % 4, (min_coord_idx + 2) % 4, (min_coord_idx + 3) % 4]]
-
-        rectangle = rectangle_from_parallelogram(parallelogram)
+        rectangle = minimum_bounding_rectangle(bbox)
         rectangle, rotation_angle = _align_vertices(rectangle)
-        final_bboxes.append(rectangle.flatten())  # TODO: Filter very small bboxes here
+        final_bboxes.append(rectangle)  # TODO: Filter very small bboxes here
 
         # This rectangle has 4 vertices as required. Now, we can construct
         # the geo_map.

@@ -222,6 +222,8 @@ class Synth800kDataset(Dataset):
         # Scale the bounding boxes as per the resized image
         # This is required because after resize, the position of the texts
         # would have changed. Bboxes shape: 2 * 4 * n_words
+        if len(bboxes.shape) < 3:
+            bboxes = bboxes[:, :, np.newaxis]
         bboxes[0, :, :] *= scale_x  # scale x coordinate
         bboxes[1, :, :] *= scale_y  # scale y coordinate
         
