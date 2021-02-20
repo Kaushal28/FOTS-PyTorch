@@ -107,6 +107,31 @@ def icdar_collate(batch):
 
     return image_paths, images, bboxs, training_masks, texts, score_maps, geo_maps, mapping
 
+def synth800k_collate(batch):
+    """
+    Collate function for ICDAR dataset. It receives a batch of ground truths
+    and formats it in required format.
+    """
+    image_paths, img, boxes, training_mask, transcripts, score_map, geo_map = zip(*batch)
+
+    batch_size = len(score_map)
+    images, score_maps, geo_maps, training_masks = [], [], [], []
+
+    # convert all numpy arrays to tensors
+    for idx in range(batch_size):
+        if img[idx] is not None:
+            images.append(torch.from_numpy(img[idx]).permute(2, 0, 1))
+            score_maps.append(torch.from_numpy(score_map[idx]).permute(2, 0, 1))
+            geo_maps.append(torch.from_numpy(geo_map[idx]).permute(2, 0, 1))
+            training_masks.append(torch.from_numpy(training_mask[idx]).permute(2, 0, 1))
+
+    images = torch.stack(images, 0)
+    score_maps = torch.stack(score_maps, 0)
+    geo_maps = torch.stack(geo_maps, 0)
+    training_masks = torch.stack(training_masks, 0)
+
+    return image_paths, images, score_maps, geo_maps, training_masks
+
 
 def l2_norm(p1, p2=np.array([0, 0])):
     """

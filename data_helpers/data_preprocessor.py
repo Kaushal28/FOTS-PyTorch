@@ -8,7 +8,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 
 from datasets import Synth800kDataset
-from data_utils import icdar_collate
+from data_utils import synth800k_collate
 
 from tqdm import tqdm
 
@@ -22,7 +22,7 @@ def main(config):
         pin_memory=True,
         batch_size=config["batch_size"],
         shuffle=False,
-        collate_fn=icdar_collate
+        collate_fn=synth800k_collate
     )
 
     os.makedirs(os.path.join(config["output_dir"], "image"), exist_ok=True)

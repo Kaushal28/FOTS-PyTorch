@@ -149,6 +149,7 @@ class Synth800kDataset(Dataset):
 
         # Load the ground truth matrix/object
         # Reference: https://www.robots.ox.ac.uk/~vgg/data/scenetext/readme.txt
+        print("Loading ground truth matrix...")
         mat = scipy.io.loadmat(os.path.join(self.image_dir, 'gt.mat'))
 
         # Convert to dataframe for ease of operations
