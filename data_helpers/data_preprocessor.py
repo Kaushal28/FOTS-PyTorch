@@ -7,8 +7,8 @@ import pandas as pd
 
 from torch.utils.data import DataLoader
 
-from data_helpers.datasets import Synth800kDataset
-from data_helpers.data_utils import icdar_collate
+from datasets import Synth800kDataset
+from data_utils import icdar_collate
 
 from tqdm import tqdm
 
