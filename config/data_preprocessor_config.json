@@ -1,0 +1,6 @@
+{
+    "data_dir": "../input/small-synth800k/content/SynthText",
+    "output_dir": "./gt",
+    "batch_size": 128,
+    "num_workers": 4
+}

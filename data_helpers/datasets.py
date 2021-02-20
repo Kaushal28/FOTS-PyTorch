@@ -134,25 +134,22 @@ class Synth800kDataset(Dataset):
     Define Synth800K Dataset based on its format.
     """
 
-    def __init__(self, image_dir, gt_path, image_size=512):
+    def __init__(self, image_dir, image_size=512):
         """Constructor."""
         super().__init__()
 
         self.image_dir = image_dir  # Path of the dir where all the images are stored
-        self.gt_path = gt_path  # Path of gt.mat object
         self.image_size = image_size  # Size of images for training
 
         if (
             not self.image_dir or
-            not self.gt_path or
-            not os.path.isdir(self.image_dir) or
-            not os.path.isfile(self.gt_path)
+            not os.path.isdir(self.image_dir)
         ):
             raise ValueError("Some of the parameter(s) is/are invalid.")
 
         # Load the ground truth matrix/object
         # Reference: https://www.robots.ox.ac.uk/~vgg/data/scenetext/readme.txt
-        mat = scipy.io.loadmat(self.gt_path)
+        mat = scipy.io.loadmat(os.path.join(self.image_dir, 'gt.mat'))
 
         # Convert to dataframe for ease of operations
         self.data_df = pd.DataFrame({
