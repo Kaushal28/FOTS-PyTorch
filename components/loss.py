@@ -118,9 +118,9 @@ class FOTSLoss(nn.Module):
         y_true_clf,
         y_pred_clf,
         y_true_reg,
-        y_pred_reg,
-        y_true_recog,
-        y_pred_recog
+        y_pred_reg
+        # ,y_true_recog,
+        # y_pred_recog
     ):
         detection_loss = self.det_loss(y_true_clf, y_pred_clf, y_true_reg, y_pred_reg)
 
