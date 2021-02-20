@@ -55,7 +55,7 @@ def main():
         batch_size=16,
         shuffle=False,
         pin_memory=True,
-        collate_fn=icdar_collate
+        # collate_fn=icdar_collate
     )
 
     # Initialize the model
