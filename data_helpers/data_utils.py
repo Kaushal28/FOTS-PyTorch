@@ -4,7 +4,7 @@ import cv2
 
 import torch
 
-from utilities.min_bbox import minimum_bounding_rectangle
+from ..utilities.min_bbox import minimum_bounding_rectangle
 
 def icdar_collate(batch):
     """
