@@ -124,6 +124,9 @@ class FOTSLoss(nn.Module):
     ):
         detection_loss = self.det_loss(y_true_clf, y_pred_clf, y_true_reg, y_pred_reg)
 
+        # Comment following line for full training
+        return detection_loss
+
         # Calculate only if something was supposed to recognized
         recognition_loss = 0
         if y_true_recog:

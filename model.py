@@ -82,6 +82,9 @@ class FOTSModel(nn.Module):
         # Step 2: Text detection from shared features using detector branch
         per_pixel_preds, loc_features = self.detector(shared_features)
 
+        # Comment the following line if training for detection + recognition
+        return per_pixel_preds, loc_features
+
         # Step 3: RoIRotate
         if self.is_training:
             rois, lengths, indices = self.roirotate(shared_features, bboxes[:, :8], mappings)

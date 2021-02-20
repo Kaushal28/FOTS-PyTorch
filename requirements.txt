@@ -1,3 +1,5 @@
 pretrainedmodels
 torch
 scipy
+numpy
+pands

@@ -61,19 +61,20 @@ def main():
     print(f'The model has {count_parameters(model):,} trainable parameters.')
 
     loss = FOTSLoss()
-
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    lr_schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, 
+        mode="min", 
+        patience=3,
+        factor=0.1,
+        min_lr=0.00001,
+        verbose=True
+    )
     
     trainer = Train(
-        model,
-        icdar_train_data_loader,
-        icdar_val_data_loader,
-        loss,
-        fots_metric,
-        optimizer,
-        12
+        model, icdar_train_data_loader, icdar_val_data_loader, loss,
+        fots_metric, optimizer, lr_schedular, 12
     )
-
     trainer.train()
 
 
