@@ -46,7 +46,7 @@ def main():
         batch_size=16,
         shuffle=False,
         pin_memory=True,
-        collate_fn=icdar_collate
+        # collate_fn=icdar_collate
     )
 
     icdar_val_data_loader = DataLoader(
