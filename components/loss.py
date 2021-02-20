@@ -56,7 +56,6 @@ class DetectionLoss(nn.Module):
 
         # Regression loss. It consists of IoU loss + bbox rotation angle loss
         lam_theta = 10  # from paper TODO: Make this configurable
-        print(f'iou: {torch.isinf(iou_loss).sum()}, angle: {torch.isinf(angle_loss).sum()}, clf: {clf_loss}')
         regression_loss = iou_loss + lam_theta*angle_loss
 
         # For regression loss, only consider the loss for the pixels where the ground truth
