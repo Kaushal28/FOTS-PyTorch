@@ -205,9 +205,9 @@ class Synth800kDataset(Dataset):
 
         # Get pixel location/geography map
         # shape of geo_map: (img_size/4 * img_size/4 * 5)
-        score_map, geo_map, bboxes = generate_rbbox(image, bboxes, transcripts)
+        score_map, geo_map, training_mask, bboxes = generate_rbbox(image, bboxes, transcripts)
 
-        return image_path, image, bboxes.reshape(-1, 8), transcripts, score_map, geo_map
+        return image_path, image, bboxes.reshape(-1, 8), training_mask, transcripts, score_map, geo_map
     
     def _load_from_file(self, image_path, bboxes):
         """Load the image from the file using given path."""
@@ -240,7 +240,8 @@ class Synth800kPreprocessedDataset(Dataset):
         image = np.load(f'../input/synth800kpreprocessed/{data["images"]}').astype(np.float32)
         score_map = np.load(f'../input/synth800kpreprocessed/{data["score_maps"]}').astype(np.float32)
         geo_map = np.load(f'../input/synth800kpreprocessed/{data["geo_maps"]}').astype(np.float32)
-        return torch.from_numpy(image), torch.from_numpy(score_map), torch.from_numpy(geo_map)
+        training_mask = np.load(f'../input/synth800kpreprocessed/{data["training_masks"]}').astype(np.float32)
+        return torch.from_numpy(image), torch.from_numpy(score_map), torch.from_numpy(geo_map), training_mask
     
     def __len__(self):
         return len(self.df)

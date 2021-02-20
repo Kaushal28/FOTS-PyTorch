@@ -11,9 +11,9 @@ def icdar_collate(batch):
     Collate function for ICDAR dataset. It receives a batch of ground truths
     and formats it in required format.
     """
-    image_paths, img, boxes, transcripts, score_map, geo_map = zip(*batch)
+    image_paths, img, boxes, training_mask, transcripts, score_map, geo_map = zip(*batch)
     batch_size = len(score_map)
-    images, score_maps, geo_maps = [], [], []
+    images, score_maps, geo_maps, training_masks = [], [], [], [] 
 
     # convert all numpy arrays to tensors
     for idx in range(batch_size):
@@ -21,10 +21,12 @@ def icdar_collate(batch):
             images.append(torch.from_numpy(img[idx]).permute(2, 0, 1))
             score_maps.append(torch.from_numpy(score_map[idx]).permute(2, 0, 1))
             geo_maps.append(torch.from_numpy(geo_map[idx]).permute(2, 0, 1))
+            training_masks.append(torch.from_numpy(training_mask[idx]).permute(2, 0, 1))
 
     images = torch.stack(images, 0)
     score_maps = torch.stack(score_maps, 0)
     geo_maps = torch.stack(geo_maps, 0)
+    training_masks = torch.stack(training_masks, 0)
 
     texts, bboxs, mapping = [], [], []
     for idx, (text, bbox) in enumerate(zip(transcripts, boxes)):
@@ -38,7 +40,7 @@ def icdar_collate(batch):
     bboxs = np.stack(bboxs, axis=0)
     bboxs = np.concatenate([bboxs, np.ones((len(bboxs), 1))], axis = 1).astype(np.float32)
 
-    return image_paths, images, bboxs, texts, score_maps, geo_maps, mapping
+    return image_paths, images, bboxs, training_masks, texts, score_maps, geo_maps, mapping
 
 
 def l2_norm(p1, p2=np.array([0, 0])):
@@ -206,6 +208,8 @@ def generate_rbbox(image, bboxes, transcripts):
     score_map = np.zeros((img_h, img_w), dtype = np.uint8)
     # Temporary bbox mask which is used as a helper.
     bbox_mask = np.zeros((img_h, img_w), dtype = np.uint8)
+    # mask used during traning, to ignore some hard areas
+    training_mask = np.ones((img_h, img_w), dtype = np.uint8)
 
     # For each bbox, first shrink the bbox as per the paper.
     # For that, for each bbox, calculate the reference length (r_i)
@@ -228,6 +232,15 @@ def generate_rbbox(image, bboxes, transcripts):
 
         cv2.fillPoly(score_map, shrunk_bbox, 1)
         cv2.fillPoly(bbox_mask, shrunk_bbox, bbox_idx+1)
+
+        # if the poly is too small, then ignore it during training
+        bbox_h = min(np.linalg.norm(bbox[0] - bbox[3]), np.linalg.norm(bbox[1] - bbox[2]))
+        bbox_w = min(np.linalg.norm(bbox[0] - bbox[1]), np.linalg.norm(bbox[2] - bbox[3]))
+        
+        if min(bbox_h, bbox_w) < 10:
+            cv2.fillPoly(training_mask, bbox.astype(np.int32)[np.newaxis, :, :], 0)
+        # if tag:
+        #     cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
 
         # Get all the points (in current bbox) in a helper mask
         bbox_points = np.argwhere(bbox_mask == (bbox_idx+1))
@@ -259,8 +272,9 @@ def generate_rbbox(image, bboxes, transcripts):
     # same size.
     score_map = score_map[::4, ::4, np.newaxis].astype(np.float32)
     geo_map = geo_map[::4, ::4].astype(np.float32)
+    training_mask = training_mask[::4, ::4, np.newaxis].astype(np.float32)
 
-    return score_map, geo_map, np.vstack(final_bboxes)
+    return score_map, geo_map, training_mask, np.vstack(final_bboxes)
 
 
 def resize_image(image, image_size):

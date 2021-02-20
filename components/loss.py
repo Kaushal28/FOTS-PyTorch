@@ -13,7 +13,7 @@ from torch.nn import functional as F
 class DetectionLoss(nn.Module):
     """Definition of Detection Loss."""
     
-    def forward(self, y_true_clf, y_pred_clf, y_true_reg, y_pred_reg):
+    def forward(self, y_true_clf, y_pred_clf, y_true_reg, y_pred_reg, training_mask):
         """
         Detection loss consists of classification loss and regression loss.
 
@@ -22,7 +22,8 @@ class DetectionLoss(nn.Module):
         """
 
         # Classification loss
-        clf_loss = self._cross_entropy_loss(y_true_clf, y_pred_clf)
+        # clf_loss = self._cross_entropy_loss(y_true_clf, y_pred_clf)
+        clf_loss = self._dice_coefficient(y_true_clf, y_pred_clf, training_mask) * 0.01
 
         # Regression loss
         
@@ -60,7 +61,7 @@ class DetectionLoss(nn.Module):
 
         # For regression loss, only consider the loss for the pixels where the ground truth
         # bboxes are present.
-        regression_loss = torch.mean(regression_loss * y_true_clf)
+        regression_loss = torch.mean(regression_loss * y_true_clf * training_mask)
 
         # Merge the reg loss and clf loss using hyperparameter lambda reg. which
         # keeps balance between two losses
@@ -69,12 +70,21 @@ class DetectionLoss(nn.Module):
 
         return detection_loss
     
-    def _cross_entropy_loss(self, y_true_clf, y_pred_clf):
+    def _dice_coefficient(self, y_true_cls, y_pred_cls,
+                         training_mask):
+        eps = 1e-5
+        intersection = torch.sum(y_true_cls * y_pred_cls * training_mask)
+        union = torch.sum(y_true_cls * training_mask) + torch.sum(y_pred_cls * training_mask) + eps
+        loss = 1. - (2 * intersection / union)
+
+        return loss
+    
+    def _cross_entropy_loss(self, y_true_clf, y_pred_clf, training_mask):
         """
         Calculates cross entropy loss between per pixel prediction score map
         and ground truths.
         """
-        return F.binary_cross_entropy(y_pred_clf, y_true_clf)
+        return torch.nn.functional.binary_cross_entropy(y_pred_clf*training_mask, (y_true_clf*training_mask))
 
 
 class RecognitionLoss(nn.Module):
@@ -117,11 +127,12 @@ class FOTSLoss(nn.Module):
         y_true_clf,
         y_pred_clf,
         y_true_reg,
-        y_pred_reg
+        y_pred_reg,
+        training_mask
         # ,y_true_recog,
         # y_pred_recog
     ):
-        detection_loss = self.det_loss(y_true_clf, y_pred_clf, y_true_reg, y_pred_reg)
+        detection_loss = self.det_loss(y_true_clf, y_pred_clf, y_true_reg, y_pred_reg, training_mask)
 
         # Comment following line for full training
         return detection_loss

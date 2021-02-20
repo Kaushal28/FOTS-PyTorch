@@ -43,11 +43,12 @@ class Train:
 
         for i, batch in tqdm(enumerate(self.train_iterator), total=len(self.train_iterator), position=0, leave=True):
             # image_paths, images, bboxs, transcripts, score_map, geo_map, mapping = batch
-            images, score_map, geo_map = batch
+            images, score_map, geo_map, training_masks = batch
 
             images = images.to(self.device)
             score_map = score_map.to(self.device)
             geo_map = geo_map.to(self.device)
+            training_masks = training_masks.to(self.device)
 
             self.optimizer.zero_grad()
             
@@ -58,7 +59,7 @@ class Train:
             pred_score_map, pred_geo_map = self.model(images)
 
             # Calculate loss
-            loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map)
+            loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, training_masks)
             # Backward pass
             loss.backward()
             self.optimizer.step()
