@@ -65,19 +65,19 @@ class FOTSModel(nn.Module):
             and self.shared_conv.training
         )
     
-    def forward(self, *x):
+    def forward(self, x):
         """FOTS forward method."""
 
-        images, bboxes, mappings = x
+        # images, bboxes, mappings = x
 
         # Get the device
-        if images.is_cuda:
-            device = images.get_device()
+        if x.is_cuda:
+            device = x.get_device()
         else:
             device = torch.device('cpu')
 
         # Step 1: Extract shared features
-        shared_features = self.shared_conv(images)
+        shared_features = self.shared_conv(x)
 
         # Step 2: Text detection from shared features using detector branch
         per_pixel_preds, loc_features = self.detector(shared_features)
