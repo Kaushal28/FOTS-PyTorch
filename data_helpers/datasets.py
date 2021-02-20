@@ -229,3 +229,18 @@ class Synth800kDataset(Dataset):
         
         bboxes = np.moveaxis(bboxes, [0, 2], [2, 0])
         return image, bboxes
+
+
+class Synth800kPreprocessedDataset(Dataset):
+    def __init__(self, df):
+        self.df = df
+    
+    def __getitem__(self, index):
+        data = self.df.iloc[index]
+        image = np.load(f'../input/synth800kpreprocessed/{data["images"]}').astype(np.float32)
+        score_map = np.load(f'../input/synth800kpreprocessed/{data["score_maps"]}').astype(np.float32)
+        geo_map = np.load(f'../input/synth800kpreprocessed/{data["geo_maps"]}').astype(np.float32)
+        return torch.from_numpy(image), torch.from_numpy(score_map), torch.from_numpy(geo_map)
+    
+    def __len__(self):
+        return len(self.df)

@@ -3,11 +3,12 @@ from torch.utils.data import DataLoader
 from torch import nn, optim
 
 import numpy as np
+import pandas as pd
 
 from eval_tools.icdar2015 import eval as icdar_eval
 
 from trainer import Train
-from data_helpers.datasets import ICDARDataset
+from data_helpers.datasets import ICDARDataset, Synth800kPreprocessedDataset
 from data_helpers.data_utils import icdar_collate
 from components.loss import FOTSLoss
 from model import FOTSModel
@@ -28,14 +29,15 @@ def main():
     """Main entry point of train module."""
     # Initialize the dataset
     # Full dataset
-    icdar_dataset = ICDARDataset('/content/ch4_training_images', '/content/ch4_training_localization_transcription_gt')
+    # dataset = ICDARDataset('/content/ch4_training_images', '/content/ch4_training_localization_transcription_gt')
+    dataset = Synth800kPreprocessedDataset(pd.read_csv('../input/synth800kpreprocessed/gt/train.csv'))
 
     # Train test split
-    val_size = 0.12
-    val_len = int(val_size * len(icdar_dataset))
-    train_len = len(icdar_dataset) - val_len
+    val_size = 0.05
+    val_len = int(val_size * len(dataset))
+    train_len = len(dataset) - val_len
     icdar_train_dataset, icdar_val_dataset = torch.utils.data.random_split(
-        icdar_dataset, [train_len, val_len]
+        dataset, [train_len, val_len]
     )
 
     icdar_train_data_loader = DataLoader(
@@ -43,6 +45,7 @@ def main():
         num_workers=4,
         batch_size=16,
         shuffle=False,
+        pin_memory=True,
         collate_fn=icdar_collate
     )
 
@@ -51,6 +54,7 @@ def main():
         num_workers=4,
         batch_size=16,
         shuffle=False,
+        pin_memory=True,
         collate_fn=icdar_collate
     )
 
