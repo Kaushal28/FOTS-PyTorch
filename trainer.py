@@ -176,9 +176,11 @@ class Train:
             start_time = time()
 
             # Train
-            loss, train_precision, train_recall, train_f1 = self.train_epoch(epoch)
+            # loss, train_precision, train_recall, train_f1 = self.train_epoch(epoch)
+            train_loss = self.train_epoch(epoch)
             # Evaluate
-            val_precision, val_recall, val_f1 = self.eval_epoch()
+            # val_precision, val_recall, val_f1 = 
+            val_loss = self.eval_epoch()
 
             self.lr_scheduler.step(val_loss)
 
@@ -191,6 +193,9 @@ class Train:
             torch.save(self.model.state_dict(), f'FOTS_epoch{epoch}.pt')
 
             # Log the training progress per epoch
+            # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
+            # print(f'\t Train Loss: {loss:.3f} | Train Precision: {train_precision:7.3f} | Train Recall: {train_recall:7.3f} | Train F1: {train_f1:7.3f}')
+            # print(f'\t Val. Precision: {val_precision:7.3f} | Val. Recall: {val_recall:7.3f} | Val F1: {val_f1:7.3f}')
             print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-            print(f'\t Train Loss: {loss:.3f} | Train Precision: {train_precision:7.3f} | Train Recall: {train_recall:7.3f} | Train F1: {train_f1:7.3f}')
-            print(f'\t Val. Precision: {val_precision:7.3f} | Val. Recall: {val_recall:7.3f} | Val F1: {val_f1:7.3f}')
+            print(f'\t Train Loss: {train_loss:.3f}')
+            print(f'\t Val. Loss: {val_loss:.3f}')
