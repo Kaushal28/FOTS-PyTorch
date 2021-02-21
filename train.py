@@ -77,7 +77,7 @@ def main(config):
 
     trainer = Train(
         model, icdar_train_data_loader, icdar_val_data_loader, loss,
-        fots_metric, optimizer, lr_schedular, config["epochs"]
+        fots_metric, optimizer, lr_schedular, config
     )
 
     trainer.train()

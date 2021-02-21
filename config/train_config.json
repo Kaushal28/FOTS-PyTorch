@@ -17,5 +17,8 @@
     "optimizer": "Adam",
     "optimizer_config": {
         "lr": 0.0001
-    }
+    },
+    "mode": ["detection"],
+    "model_save_path": "/content/drive/MyDrive/cs2",
+    "model_save_freq": 5
 }

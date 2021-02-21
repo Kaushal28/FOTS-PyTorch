@@ -1,8 +1,9 @@
+import os
+from time import time
+
 import torch
 
 import numpy as np
-
-from time import time
 
 from tqdm import tqdm
 
@@ -13,7 +14,7 @@ class Train:
     Trainer class which defines model training and evaluation methods.
     """
 
-    def __init__(self, model, train_iterator, valid_iterator, loss, metric, optimizer, lr_scheduler, epochs):
+    def __init__(self, model, train_iterator, valid_iterator, loss, metric, optimizer, lr_scheduler, config):
         super().__init__()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -24,11 +25,12 @@ class Train:
         self.lr_scheduler = lr_scheduler
         self.transcript_encoder = TranscriptEncoder(classes)
         self.metric = metric
-        self.epochs = epochs
+        self.epochs = config["epochs"]
         self.loss = loss
+        self.config = config
 
         self.model.to(self.device)
-    
+
     def _eval_metrics(self, y_pred, y_true):
         """
         Calculate evaluation metrics given predictions and ground truths.
@@ -192,8 +194,14 @@ class Train:
 
             epoch_mins, epoch_secs = self.epoch_time(start_time, end_time)
 
-            # Save the model
-            torch.save(self.model.state_dict(), f'FOTS_epoch{epoch}.pt')
+            # Save the model at "save_freq" and at last epoch
+            if ((epoch+1) % self.config["model_save_freq"]) == 0 or epoch+1 == self.epochs:
+                if not os.path.isdir(self.config["model_save_path"]):
+                    os.makedirs(self.config["model_save_path"], exist_ok=True)
+                torch.save(
+                    self.model.state_dict(),
+                    os.path.join(self.config["model_save_path"], f'FOTS_epoch{epoch+1}.pt')
+                )
 
             # Log the training progress per epoch
             # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
