@@ -1,4 +1,6 @@
+import os
 import json
+import random
 import argparse
 
 import torch
@@ -48,6 +50,7 @@ def main(config):
         icdar_train_dataset,
         pin_memory=True,
         **config["dataset_config"],
+        worker_init_fn=seed_worker
         # collate_fn=icdar_collate
     )
 
@@ -55,6 +58,7 @@ def main(config):
         icdar_val_dataset,
         **config["dataset_config"],
         pin_memory=True,
+        worker_init_fn=seed_worker
         # collate_fn=icdar_collate
     )
 
@@ -79,7 +83,31 @@ def main(config):
     trainer.train()
 
 
+def seed_all(seed=28):
+    """Seed everything for result reproducibility."""
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.enabled = False
+
+
+def seed_worker(_worker_id):
+    """Seed data loader workers."""
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 if __name__ == '__main__':
+
+    # First seed everything
+    seed_all()
+
     # Parse command line args to get the config file
     parser = argparse.ArgumentParser()
     parser.add_argument(

@@ -31,7 +31,7 @@ def main(config):
     os.makedirs(os.path.join(config["output_dir"], "training_mask"), exist_ok=True)
 
     img_list, sm_list, gm_list, tm_list = [], [], [], []
-    for idx, batch in tqdm(enumerate(data_loader)):
+    for idx, batch in tqdm(enumerate(data_loader), total=len(data_loader), position=0, leave=True):
         image_paths, images, score_maps, geo_maps, training_masks = batch
         for pth, i, s, g, tm in zip(image_paths, images, score_maps, geo_maps, training_masks):
             img_pth = pth.split("/")[-2:]
