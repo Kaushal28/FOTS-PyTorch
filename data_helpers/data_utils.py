@@ -338,9 +338,15 @@ def generate_rbbox(image, bboxes, transcripts):
         # Now, as per the assumption, the bbox can be of any shape (quadrangle).
         # Therefore, to get the angle of rotation and pixel distances from the
         # bbox edges, fit a minimum area rectangle to bbox quadrangle.
-        rectangle = minimum_bounding_rectangle(bbox)
-        rectangle, rotation_angle = _align_vertices(rectangle)
-        final_bboxes.append(rectangle)  # TODO: Filter very small bboxes here
+        try:
+            rectangle = minimum_bounding_rectangle(bbox)
+        except Exception:
+            # If could not find the min area rectangle, ignore that bbox while training
+            cv2.fillPoly(training_mask, bbox.astype(np.int32)[np.newaxis, :, :], 0)
+            continue
+        else:
+            rectangle, rotation_angle = _align_vertices(rectangle)
+            final_bboxes.append(rectangle)  # TODO: Filter very small bboxes here
 
         # This rectangle has 4 vertices as required. Now, we can construct
         # the geo_map.
