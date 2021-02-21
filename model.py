@@ -1,7 +1,7 @@
 import numpy as np
 
 import torch
-from torch import nn
+from torch import nn, optim
 import math
 
 import pretrainedmodels
@@ -33,35 +33,49 @@ class FOTSModel(nn.Module):
         back_bone =  pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
         self.shared_conv = SharedConvolutions(back_bone=back_bone)
 
-        n_class = len(classes) + 1  # 1 for "ctc blank" token (0)
-        self.recognizer = Recognizer(n_class)
+        # n_class = len(classes) + 1  # 1 for "ctc blank" token (0)
+        # self.recognizer = Recognizer(n_class)
         self.detector = Detector()
-        self.roirotate = ROIRotate()
+        # self.roirotate = ROIRotate()
 
     def to(self, device):
         """Move the FOTS model to given device (GPU/CPU)."""
         self.detector.to(device)
-        self.recognizer.to(device)
+        # self.recognizer.to(device)
         self.shared_conv.to(device)
     
     def train(self):
         """Transition the FOTS model to training mode."""
-        self.recognizer.train()
+        # self.recognizer.train()
         self.detector.train()
         self.shared_conv.train()
     
     def eval(self):
         """Transition the FOTS model to evaluation mode."""
-        self.recognizer.eval()
+        # self.recognizer.eval()
         self.detector.eval()
         self.shared_conv.eval()
+    
+    def get_optimizer(self, optimizer, params):
+        """
+        Get given optimizer with model parameters for weight updates.
+        """
+        # Reference: https://pytorch.org/docs/stable/optim.html#per-parameter-options
+        getattr(optim, optimizer, "Adam")(
+            [
+                {'params': self.shared_conv.parameters()},
+                {'params': self.detector.parameters()},
+                # {'params': self.recognizer.parameters()},
+            ],
+            **params
+        )
     
     @property
     def is_training(self):
         """Check whether the FOTS model is in training mode."""
         return (
             self.detector.training
-            and self.recognizer.training
+            # and self.recognizer.training
             and self.shared_conv.training
         )
     

@@ -1,9 +1,22 @@
 {
     "data_base_dir": "../input/synth800kpreprocessed",
     "val_fraction": 0.05,
-    "batch_size": 16,
-    "num_workers": 4,
-    "shuffle": false,
-    "lr": 0.0001,
-    "epochs": 16
+    "dataset_config": {
+        "batch_size": 16,
+        "num_workers": 4,
+        "shuffle": false
+    },
+    "epochs": 16,
+    "lr_schedular": "ReduceLROnPlateau",
+    "lr_schedular_config": {
+        "mode": "min",
+        "patience": 3,
+        "factor": 0.1,
+        "min_lr": 0.00001,
+        "verbose": true
+    },
+    "optimizer": "Adam",
+    "optimizer_config": {
+        "lr": 0.0001
+    }
 }

@@ -46,18 +46,14 @@ def main(config):
 
     icdar_train_data_loader = DataLoader(
         icdar_train_dataset,
-        num_workers=config["num_workers"],
-        batch_size=config["batch_size"],
-        shuffle=config["shuffle"],
         pin_memory=True,
+        **config["dataset_config"],
         # collate_fn=icdar_collate
     )
 
     icdar_val_data_loader = DataLoader(
         icdar_val_dataset,
-        num_workers=config["num_workers"],
-        batch_size=config["batch_size"],
-        shuffle=config["shuffle"],
+        **config["dataset_config"],
         pin_memory=True,
         # collate_fn=icdar_collate
     )
@@ -69,20 +65,17 @@ def main(config):
     print(f'The model has {count_parameters(model):,} trainable parameters.')
 
     loss = FOTSLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config["lr"])
-    lr_schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 
-        mode="min", 
-        patience=3,
-        factor=0.1,
-        min_lr=0.00001,
-        verbose=True
-    )
-    
+    optimizer = model.get_optimizer(config["optimizer"], config["optimizer_config"])
+
+    lr_schedular = getattr(
+        optim.lr_scheduler, config["lr_schedular"], "ReduceLROnPlateau"
+    )(optimizer, **config["lr_scheduler_config"])
+
     trainer = Train(
         model, icdar_train_data_loader, icdar_val_data_loader, loss,
         fots_metric, optimizer, lr_schedular, config["epochs"]
     )
+
     trainer.train()
 
 
