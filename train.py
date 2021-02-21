@@ -68,7 +68,7 @@ def main(config):
     # Count trainable parameters
     print(f'The model has {count_parameters(model):,} trainable parameters.')
 
-    loss = FOTSLoss()
+    loss = FOTSLoss(config)
     optimizer = model.get_optimizer(config["optimizer"], config["optimizer_config"])
 
     lr_schedular = getattr(

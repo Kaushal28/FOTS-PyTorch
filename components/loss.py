@@ -12,6 +12,10 @@ from torch.nn import functional as F
 
 class DetectionLoss(nn.Module):
     """Definition of Detection Loss."""
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
     
     def forward(self, y_true_clf, y_pred_clf, y_true_reg, y_pred_reg, training_mask):
         """
@@ -56,8 +60,7 @@ class DetectionLoss(nn.Module):
         angle_loss = 1 - torch.cos(theta_pred - theta_gt)
 
         # Regression loss. It consists of IoU loss + bbox rotation angle loss
-        lam_theta = 10  # from paper TODO: Make this configurable
-        regression_loss = iou_loss + lam_theta*angle_loss
+        regression_loss = iou_loss + self.config["lam_theta"] * angle_loss
 
         # For regression loss, only consider the loss for the pixels where the ground truth
         # bboxes are present.
@@ -65,8 +68,7 @@ class DetectionLoss(nn.Module):
 
         # Merge the reg loss and clf loss using hyperparameter lambda reg. which
         # keeps balance between two losses
-        lam_reg = 1  # Value is from paper TODO: Make this configurable
-        detection_loss = clf_loss + lam_reg * regression_loss
+        detection_loss = clf_loss + self.config["lam_reg"] * regression_loss
 
         return detection_loss
     
@@ -117,10 +119,11 @@ class FOTSLoss(nn.Module):
     detection loss.
     """
     
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
         self.rec_loss = RecognitionLoss()
-        self.det_loss = DetectionLoss()
+        self.det_loss = DetectionLoss(config)
+        self.config = config
     
     def forward(
         self,
@@ -144,5 +147,4 @@ class FOTSLoss(nn.Module):
         
         print(f'rec: {recognition_loss}')
         # combine rec. loss and det. loss using lambda recognition.
-        lam_recog = 1  # value from paper TODO: Make this configurable
-        return detection_loss + lam_recog * recognition_loss
+        return detection_loss + config["lam_recog"] * recognition_loss

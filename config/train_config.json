@@ -1,15 +1,15 @@
 {
-    "data_base_dir": "../input/synth800kpreprocessed",
+    "data_base_dir": "/content/gt",
     "val_fraction": 0.05,
     "dataset_config": {
         "batch_size": 16,
         "num_workers": 4,
         "shuffle": false
     },
-    "epochs": 16,
+    "epochs": 40,
     "lr_schedular": "CosineAnnealingWarmRestarts",
     "lr_scheduler_config": {
-        "T_0": 10,
+        "T_0": 8,
         "T_mult": 1,
         "eta_min": 0.000001,
         "verbose": true
@@ -18,7 +18,11 @@
     "optimizer_config": {
         "lr": 0.0001
     },
-    "mode": ["detection"],
     "model_save_path": "/content/drive/MyDrive/cs2",
-    "model_save_freq": 5
+    "model_save_freq": 5,
+    "fots_hyperparameters": {
+        "lam_theta": 10,
+        "lam_reg": 1,
+        "lam_recog": 1
+    }
 }
