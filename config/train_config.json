@@ -8,7 +8,7 @@
     },
     "epochs": 16,
     "lr_schedular": "ReduceLROnPlateau",
-    "lr_schedular_config": {
+    "lr_scheduler_config": {
         "mode": "min",
         "patience": 3,
         "factor": 0.1,

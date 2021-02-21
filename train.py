@@ -33,8 +33,8 @@ def main(config):
     # Initialize the dataset
     # Full dataset
     # dataset = ICDARDataset('/content/ch4_training_images', '/content/ch4_training_localization_transcription_gt')
-    data_df = pd.read_csv(f"{config['base_dir']}/gt/train.csv")
-    dataset = Synth800kPreprocessedDataset(data_df, config["base_dir"])
+    data_df = pd.read_csv(f"{config['data_base_dir']}/gt/train.csv")
+    dataset = Synth800kPreprocessedDataset(data_df, config["data_base_dir"])
 
     # Train test split
     val_size = config["val_fraction"]

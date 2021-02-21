@@ -61,7 +61,7 @@ class FOTSModel(nn.Module):
         Get given optimizer with model parameters for weight updates.
         """
         # Reference: https://pytorch.org/docs/stable/optim.html#per-parameter-options
-        getattr(optim, optimizer, "Adam")(
+        optimizer = getattr(optim, optimizer, "Adam")(
             [
                 {'params': self.shared_conv.parameters()},
                 {'params': self.detector.parameters()},
@@ -69,6 +69,8 @@ class FOTSModel(nn.Module):
             ],
             **params
         )
+
+        return optimizer
     
     @property
     def is_training(self):
