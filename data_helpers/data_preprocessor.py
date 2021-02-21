@@ -37,10 +37,10 @@ def main(config):
             img_pth = pth.split("/")[-2:]
             img_name = img_pth[-1].split(".")[0]
 
-            img_list.append(f"{config['output_dir']}/image/{img_name}.npy")
-            sm_list.append(f"{config['output_dir']}/score/{img_name}_score_map.npy")
-            gm_list.append(f"{config['output_dir']}/geo/{img_name}_geo_map.npy")
-            tm_list.append(f"{config['output_dir']}/training_mask/{img_name}_tm.npy")
+            img_list.append(f"image/{img_name}.npy")
+            sm_list.append(f"score/{img_name}_score_map.npy")
+            gm_list.append(f"geo/{img_name}_geo_map.npy")
+            tm_list.append(f"training_mask/{img_name}_tm.npy")
 
             np.save(f"{config['output_dir']}/image/{img_name}.npy", i.numpy().astype(np.uint8))
             np.save(f"{config['output_dir']}/score/{img_name}_score_map.npy", s.numpy().astype(np.uint8))
