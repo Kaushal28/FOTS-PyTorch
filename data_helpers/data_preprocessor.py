@@ -47,7 +47,7 @@ def main(config):
             np.save(f"{config['output_dir']}/geo/{img_name}_geo_map.npy", g.numpy().astype(np.float32))
             np.save(f"{config['output_dir']}/training_mask/{img_name}_tm.npy", tm.numpy().astype(np.uint8))
         
-        if idx == 100:
+        if idx == config["num_iterations"]:
             break
 
     data_df = pd.DataFrame({
@@ -72,4 +72,4 @@ if __name__ == "__main__":
             config = json.load(f)
         main(config)
     else:
-        print("Invalid configuration file provoded.")
+        print("Invalid data preprocessing configuration file provided.")

@@ -1,3 +1,6 @@
+import json
+import argparse
+
 import torch
 from torch.utils.data import DataLoader
 from torch import nn, optim
@@ -25,15 +28,16 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def main():
+def main(config):
     """Main entry point of train module."""
     # Initialize the dataset
     # Full dataset
     # dataset = ICDARDataset('/content/ch4_training_images', '/content/ch4_training_localization_transcription_gt')
-    dataset = Synth800kPreprocessedDataset(pd.read_csv('../input/synth800kpreprocessed/gt/train.csv'))
+    data_df = pd.read_csv(f"{config['base_dir']}/gt/train.csv")
+    dataset = Synth800kPreprocessedDataset(data_df, config["base_dir"])
 
     # Train test split
-    val_size = 0.05
+    val_size = config["val_fraction"]
     val_len = int(val_size * len(dataset))
     train_len = len(dataset) - val_len
     icdar_train_dataset, icdar_val_dataset = torch.utils.data.random_split(
@@ -42,18 +46,18 @@ def main():
 
     icdar_train_data_loader = DataLoader(
         icdar_train_dataset,
-        num_workers=4,
-        batch_size=16,
-        shuffle=False,
+        num_workers=config["num_workers"],
+        batch_size=config["batch_size"],
+        shuffle=config["shuffle"],
         pin_memory=True,
         # collate_fn=icdar_collate
     )
 
     icdar_val_data_loader = DataLoader(
         icdar_val_dataset,
-        num_workers=4,
-        batch_size=16,
-        shuffle=False,
+        num_workers=config["num_workers"],
+        batch_size=config["batch_size"],
+        shuffle=config["shuffle"],
         pin_memory=True,
         # collate_fn=icdar_collate
     )
@@ -65,7 +69,7 @@ def main():
     print(f'The model has {count_parameters(model):,} trainable parameters.')
 
     loss = FOTSLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=config["lr"])
     lr_schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 
         mode="min", 
@@ -77,10 +81,23 @@ def main():
     
     trainer = Train(
         model, icdar_train_data_loader, icdar_val_data_loader, loss,
-        fots_metric, optimizer, lr_schedular, 50
+        fots_metric, optimizer, lr_schedular, config["epochs"]
     )
     trainer.train()
 
 
 if __name__ == '__main__':
-    main()
+    # Parse command line args to get the config file
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-c', '--config', default="../config/train_config.json",
+        type=str, help='Training config file path.'
+    )
+    args = parser.parse_args()
+
+    if args.config is not None:
+        with open(args.config, "r") as f:
+            config = json.load(f)
+        main(config)
+    else:
+        print("Invalid training configuration file provided.")

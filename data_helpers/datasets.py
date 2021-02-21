@@ -230,15 +230,16 @@ class Synth800kDataset(Dataset):
 
 
 class Synth800kPreprocessedDataset(Dataset):
-    def __init__(self, df):
+    def __init__(self, base_dir, df):
+        self.base_dir = base_dir
         self.df = df
     
     def __getitem__(self, index):
         data = self.df.iloc[index]
-        image = np.load(f'../input/synth800kpreprocessed/{data["images"]}').astype(np.float32)
-        score_map = np.load(f'../input/synth800kpreprocessed/{data["score_maps"]}').astype(np.float32)
-        geo_map = np.load(f'../input/synth800kpreprocessed/{data["geo_maps"]}').astype(np.float32)
-        training_mask = np.load(f'../input/synth800kpreprocessed/{data["training_masks"]}').astype(np.float32)
+        image = np.load(f'{self.base_dir}/{data["images"]}').astype(np.float32)
+        score_map = np.load(f'{self.base_dir}/{data["score_maps"]}').astype(np.float32)
+        geo_map = np.load(f'{self.base_dir}/{data["geo_maps"]}').astype(np.float32)
+        training_mask = np.load(f'{self.base_dir}/{data["training_masks"]}').astype(np.float32)
         return torch.from_numpy(image), torch.from_numpy(score_map), torch.from_numpy(geo_map), training_mask
     
     def __len__(self):
