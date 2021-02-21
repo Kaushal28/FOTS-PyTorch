@@ -35,7 +35,7 @@ def main(config):
     # Initialize the dataset
     # Full dataset
     # dataset = ICDARDataset('/content/ch4_training_images', '/content/ch4_training_localization_transcription_gt')
-    data_df = pd.read_csv(f"{config['data_base_dir']}/gt/train.csv")
+    data_df = pd.read_csv(f"{config['data_base_dir']}/train.csv")
     dataset = Synth800kPreprocessedDataset(config["data_base_dir"], data_df)
 
     # Train test split
