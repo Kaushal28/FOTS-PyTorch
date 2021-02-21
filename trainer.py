@@ -209,4 +209,4 @@ class Train:
             # print(f'\t Val. Precision: {val_precision:7.3f} | Val. Recall: {val_recall:7.3f} | Val F1: {val_f1:7.3f}')
             print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
             print(f'\t Train Loss: {train_loss:.3f}')
-            print(f'\t Val. Loss: {val_loss:.3f}')
+            print(f'\t Val. Loss: {val_loss:.3f}\n')
