@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import scipy.io
 
-from .data_utils import generate_rbbox, resize_image, generate_rbbox_v2
+from data_utils import generate_rbbox, resize_image, generate_rbbox_v2
 
 # TODO: Training masks and ignore bboxes having ### for training
 class ICDARDataset(Dataset):
