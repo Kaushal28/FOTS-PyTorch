@@ -704,6 +704,14 @@ def generate_rbbox_v2(image, polys, tags):
             geo_map[y, x, 3] = point_dist_to_line(p3_rect, p0_rect, point)
             # angle
             geo_map[y, x, 4] = rotate_angle
+    
+    # Size of the feature map from shared convolutions is 1/4th of
+    # original image size. So all this geo_map should be of the
+    # same size.
+    score_map = score_map[::4, ::4, np.newaxis].astype(np.float32)
+    geo_map = geo_map[::4, ::4].astype(np.float32)
+    training_mask = training_mask[::4, ::4, np.newaxis].astype(np.float32)
+
     return score_map, geo_map, training_mask, np.vstack(rectanges)
 
 
