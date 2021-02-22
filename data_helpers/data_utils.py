@@ -583,7 +583,7 @@ def sort_rectangle(poly):
             return poly[[p0_index, p1_index, p2_index, p3_index]], angle
 
 
-def generate_rbox(image, polys, tags):
+def generate_rbbox_v2(image, polys, tags):
     h, w, _ = image.shape
     poly_mask = np.zeros((h, w), dtype = np.uint8)
     score_map = np.zeros((h, w), dtype = np.uint8)
