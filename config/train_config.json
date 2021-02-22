@@ -21,7 +21,7 @@
     "model_save_path": "/content/drive/MyDrive/cs2",
     "model_save_freq": 5,
     "fots_hyperparameters": {
-        "lam_theta": 10,
+        "lam_theta": 20,
         "lam_reg": 1,
         "lam_recog": 1
     }

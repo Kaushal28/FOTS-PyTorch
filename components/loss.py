@@ -60,7 +60,7 @@ class DetectionLoss(nn.Module):
         angle_loss = 1 - torch.cos(theta_pred - theta_gt)
 
         # Regression loss. It consists of IoU loss + bbox rotation angle loss
-        regression_loss = iou_loss + self.config["lam_theta"] * angle_loss
+        regression_loss = iou_loss + self.config["fots_hyperparameters"]["lam_theta"] * angle_loss
 
         # For regression loss, only consider the loss for the pixels where the ground truth
         # bboxes are present.
@@ -68,7 +68,7 @@ class DetectionLoss(nn.Module):
 
         # Merge the reg loss and clf loss using hyperparameter lambda reg. which
         # keeps balance between two losses
-        detection_loss = clf_loss + self.config["lam_reg"] * regression_loss
+        detection_loss = clf_loss + self.config["fots_hyperparameters"]["lam_reg"] * regression_loss
 
         return detection_loss
     
@@ -147,4 +147,4 @@ class FOTSLoss(nn.Module):
         
         print(f'rec: {recognition_loss}')
         # combine rec. loss and det. loss using lambda recognition.
-        return detection_loss + config["lam_recog"] * recognition_loss
+        return detection_loss + config["fots_hyperparameters"]["lam_recog"] * recognition_loss
