@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import scipy.io
 
-from .data_utils import generate_rbbox, resize_image
+from .data_utils import generate_rbbox, resize_image, generate_rbbox_v2
 
 # TODO: Training masks and ignore bboxes having ### for training
 class ICDARDataset(Dataset):
@@ -203,7 +203,7 @@ class Synth800kDataset(Dataset):
 
         # Get pixel location/geography map
         # shape of geo_map: (img_size/4 * img_size/4 * 5)
-        score_map, geo_map, training_mask, bboxes = generate_rbbox(image, bboxes, transcripts)
+        score_map, geo_map, training_mask, bboxes = generate_rbbox_v2(image, bboxes, transcripts)
 
         return image_path, image, bboxes.reshape(-1, 8), training_mask, transcripts, score_map, geo_map
     
