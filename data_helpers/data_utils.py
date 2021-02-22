@@ -374,6 +374,78 @@ def generate_rbbox(image, bboxes, transcripts):
     return score_map, geo_map, training_mask, np.vstack(final_bboxes)
 
 
+def shrink_poly(poly, r):
+    '''
+    fit a poly inside the origin poly, maybe bugs here...
+    used for generate the score map
+    :param poly: the text poly
+    :param r: r in the paper
+    :return: the shrinked poly
+    '''
+    # shrink ratio
+    R = 0.3
+    # find the longer pair
+    if np.linalg.norm(poly[0] - poly[1]) + np.linalg.norm(poly[2] - poly[3]) > \
+            np.linalg.norm(poly[0] - poly[3]) + np.linalg.norm(poly[1] - poly[2]):
+        # first move (p0, p1), (p2, p3), then (p0, p3), (p1, p2)
+        ## p0, p1
+        theta = np.arctan2((poly[1][1] - poly[0][1]), (poly[1][0] - poly[0][0]))
+        poly[0][0] += R * r[0] * np.cos(theta)
+        poly[0][1] += R * r[0] * np.sin(theta)
+        poly[1][0] -= R * r[1] * np.cos(theta)
+        poly[1][1] -= R * r[1] * np.sin(theta)
+        ## p2, p3
+        theta = np.arctan2((poly[2][1] - poly[3][1]), (poly[2][0] - poly[3][0]))
+        poly[3][0] += R * r[3] * np.cos(theta)
+        poly[3][1] += R * r[3] * np.sin(theta)
+        poly[2][0] -= R * r[2] * np.cos(theta)
+        poly[2][1] -= R * r[2] * np.sin(theta)
+        ## p0, p3
+        theta = np.arctan2((poly[3][0] - poly[0][0]), (poly[3][1] - poly[0][1]))
+        poly[0][0] += R * r[0] * np.sin(theta)
+        poly[0][1] += R * r[0] * np.cos(theta)
+        poly[3][0] -= R * r[3] * np.sin(theta)
+        poly[3][1] -= R * r[3] * np.cos(theta)
+        ## p1, p2
+        theta = np.arctan2((poly[2][0] - poly[1][0]), (poly[2][1] - poly[1][1]))
+        poly[1][0] += R * r[1] * np.sin(theta)
+        poly[1][1] += R * r[1] * np.cos(theta)
+        poly[2][0] -= R * r[2] * np.sin(theta)
+        poly[2][1] -= R * r[2] * np.cos(theta)
+    else:
+        ## p0, p3
+        # print poly
+        theta = np.arctan2((poly[3][0] - poly[0][0]), (poly[3][1] - poly[0][1]))
+        poly[0][0] += R * r[0] * np.sin(theta)
+        poly[0][1] += R * r[0] * np.cos(theta)
+        poly[3][0] -= R * r[3] * np.sin(theta)
+        poly[3][1] -= R * r[3] * np.cos(theta)
+        ## p1, p2
+        theta = np.arctan2((poly[2][0] - poly[1][0]), (poly[2][1] - poly[1][1]))
+        poly[1][0] += R * r[1] * np.sin(theta)
+        poly[1][1] += R * r[1] * np.cos(theta)
+        poly[2][0] -= R * r[2] * np.sin(theta)
+        poly[2][1] -= R * r[2] * np.cos(theta)
+        ## p0, p1
+        theta = np.arctan2((poly[1][1] - poly[0][1]), (poly[1][0] - poly[0][0]))
+        poly[0][0] += R * r[0] * np.cos(theta)
+        poly[0][1] += R * r[0] * np.sin(theta)
+        poly[1][0] -= R * r[1] * np.cos(theta)
+        poly[1][1] -= R * r[1] * np.sin(theta)
+        ## p2, p3
+        theta = np.arctan2((poly[2][1] - poly[3][1]), (poly[2][0] - poly[3][0]))
+        poly[3][0] += R * r[3] * np.cos(theta)
+        poly[3][1] += R * r[3] * np.sin(theta)
+        poly[2][0] -= R * r[2] * np.cos(theta)
+        poly[2][1] -= R * r[2] * np.sin(theta)
+    return poly
+
+
+def point_dist_to_line(p1, p2, p3):
+    # compute the distance from p3 to p1-p2
+    return np.linalg.norm(np.cross(p2 - p1, p1 - p3)) / np.linalg.norm(p2 - p1)
+
+
 def fit_line(p1, p2):
     # fit a line ax+by+c = 0
     if p1[0] == p1[1]:
@@ -475,7 +547,43 @@ def rectangle_from_parallelogram(poly):
             return np.array([new_p0, p1, new_p2, p3], dtype = np.float32)
 
 
-def generate_rbbox_v2(image, polys, tags):
+def sort_rectangle(poly):
+    # sort the four coordinates of the polygon, points in poly should be sorted clockwise
+    # First find the lowest point
+    p_lowest = np.argmax(poly[:, 1])
+    if np.count_nonzero(poly[:, 1] == poly[p_lowest, 1]) == 2:
+        # 底边平行于X轴, 那么p0为左上角
+        p0_index = np.argmin(np.sum(poly, axis = 1))
+        p1_index = (p0_index + 1) % 4
+        p2_index = (p0_index + 2) % 4
+        p3_index = (p0_index + 3) % 4
+        return poly[[p0_index, p1_index, p2_index, p3_index]], 0.
+    else:
+        # 找到最低点右边的点
+        p_lowest_right = (p_lowest - 1) % 4
+        p_lowest_left = (p_lowest + 1) % 4
+        angle = np.arctan(
+            -(poly[p_lowest][1] - poly[p_lowest_right][1]) / (poly[p_lowest][0] - poly[p_lowest_right][0]))
+        # assert angle > 0
+        if angle <= 0:
+            print(angle, poly[p_lowest], poly[p_lowest_right])
+        if angle / np.pi * 180 > 45:
+            # 这个点为p2
+            p2_index = p_lowest
+            p1_index = (p2_index - 1) % 4
+            p0_index = (p2_index - 2) % 4
+            p3_index = (p2_index + 1) % 4
+            return poly[[p0_index, p1_index, p2_index, p3_index]], -(np.pi / 2 - angle)
+        else:
+            # 这个点为p3
+            p3_index = p_lowest
+            p0_index = (p3_index + 1) % 4
+            p1_index = (p3_index + 2) % 4
+            p2_index = (p3_index + 3) % 4
+            return poly[[p0_index, p1_index, p2_index, p3_index]], angle
+
+
+def generate_rbox(image, polys, tags):
     h, w, _ = image.shape
     poly_mask = np.zeros((h, w), dtype = np.uint8)
     score_map = np.zeros((h, w), dtype = np.uint8)
@@ -493,7 +601,7 @@ def generate_rbbox_v2(image, polys, tags):
             r[i] = min(np.linalg.norm(poly[i] - poly[(i + 1) % 4]),
                        np.linalg.norm(poly[i] - poly[(i - 1) % 4]))
         # score map
-        shrinked_poly = shrink_bbox(poly.copy(), r).astype(np.int32)[np.newaxis, :, :]
+        shrinked_poly = shrink_poly(poly.copy(), r).astype(np.int32)[np.newaxis, :, :]
         cv2.fillPoly(score_map, shrinked_poly, 1)
         cv2.fillPoly(poly_mask, shrinked_poly, poly_idx + 1)
         # if the poly is too small, then ignore it during training
@@ -502,8 +610,8 @@ def generate_rbbox_v2(image, polys, tags):
         # if min(poly_h, poly_w) < FLAGS.min_text_size:
         if min(poly_h, poly_w) < 10:
             cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
-        # if tag:
-        #     cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
+        if tag:
+            cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
 
         xy_in_poly = np.argwhere(poly_mask == (poly_idx + 1))
         # if geometry == 'RBOX':
@@ -517,7 +625,7 @@ def generate_rbbox_v2(image, polys, tags):
             edge = fit_line([p0[0], p1[0]], [p0[1], p1[1]])
             backward_edge = fit_line([p0[0], p3[0]], [p0[1], p3[1]])
             forward_edge = fit_line([p1[0], p2[0]], [p1[1], p2[1]])
-            if _point_to_line_dist(p0, p1, p2) > _point_to_line_dist(p0, p1, p3):
+            if point_dist_to_line(p0, p1, p2) > point_dist_to_line(p0, p1, p3):
                 # 平行线经过p2
                 if edge[1] == 0:
                     edge_opposite = [1, 0, -p2[0]]
@@ -535,7 +643,7 @@ def generate_rbbox_v2(image, polys, tags):
             new_p2 = p2
             new_p3 = p3
             new_p2 = line_cross_point(forward_edge, edge_opposite)
-            if _point_to_line_dist(p1, new_p2, p0) > _point_to_line_dist(p1, new_p2, p3):
+            if point_dist_to_line(p1, new_p2, p0) > point_dist_to_line(p1, new_p2, p3):
                 # across p0
                 if forward_edge[1] == 0:
                     forward_opposite = [1, 0, -p0[0]]
@@ -556,7 +664,7 @@ def generate_rbbox_v2(image, polys, tags):
             new_p2 = p2
             new_p3 = p3
             new_p3 = line_cross_point(backward_edge, edge_opposite)
-            if _point_to_line_dist(p0, p3, p1) > _point_to_line_dist(p0, p3, p2):
+            if point_dist_to_line(p0, p3, p1) > point_dist_to_line(p0, p3, p2):
                 # across p1
                 if backward_edge[1] == 0:
                     backward_opposite = [1, 0, -p1[0]]
@@ -580,23 +688,23 @@ def generate_rbbox_v2(image, polys, tags):
             [min_coord_idx, (min_coord_idx + 1) % 4, (min_coord_idx + 2) % 4, (min_coord_idx + 3) % 4]]
 
         rectange = rectangle_from_parallelogram(parallelogram)
-        rectange, rotate_angle = _align_vertices(rectange)
+        rectange, rotate_angle = sort_rectangle(rectange)
         rectanges.append(rectange.flatten())
 
         p0_rect, p1_rect, p2_rect, p3_rect = rectange
         for y, x in xy_in_poly:
             point = np.array([x, y], dtype = np.float32)
             # top
-            geo_map[y, x, 0] = _point_to_line_dist(p0_rect, p1_rect, point)
+            geo_map[y, x, 0] = point_dist_to_line(p0_rect, p1_rect, point)
             # right
-            geo_map[y, x, 1] = _point_to_line_dist(p1_rect, p2_rect, point)
+            geo_map[y, x, 1] = point_dist_to_line(p1_rect, p2_rect, point)
             # down
-            geo_map[y, x, 2] = _point_to_line_dist(p2_rect, p3_rect, point)
+            geo_map[y, x, 2] = point_dist_to_line(p2_rect, p3_rect, point)
             # left
-            geo_map[y, x, 3] = _point_to_line_dist(p3_rect, p0_rect, point)
+            geo_map[y, x, 3] = point_dist_to_line(p3_rect, p0_rect, point)
             # angle
             geo_map[y, x, 4] = rotate_angle
-    return score_map, geo_map, training_mask, rectanges
+    return score_map, geo_map, training_mask, np.vstack(rectanges)
 
 
 def resize_image(image, image_size):
