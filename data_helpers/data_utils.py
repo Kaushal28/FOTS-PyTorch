@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 
 import cv2
@@ -451,8 +452,11 @@ def fit_line(p1, p2):
     if p1[0] == p1[1]:
         return [1., 0., -p1[0]]
     else:
-        [k, b] = np.polyfit(p1, p2, deg = 1)
-        return [k, -1., b]
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            [k, b] = np.polyfit(p1, p2, deg = 1)
+            return [k, -1., b]
+        
 
 
 def line_cross_point(line1, line2):
@@ -610,8 +614,8 @@ def generate_rbbox_v2(image, polys, tags):
         # if min(poly_h, poly_w) < FLAGS.min_text_size:
         if min(poly_h, poly_w) < 10:
             cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
-        if tag:
-            cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
+        # if tag:
+        #     cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
 
         xy_in_poly = np.argwhere(poly_mask == (poly_idx + 1))
         # if geometry == 'RBOX':
@@ -622,9 +626,16 @@ def generate_rbbox_v2(image, polys, tags):
             p1 = poly[(i + 1) % 4]
             p2 = poly[(i + 2) % 4]
             p3 = poly[(i + 3) % 4]
-            edge = fit_line([p0[0], p1[0]], [p0[1], p1[1]])
-            backward_edge = fit_line([p0[0], p3[0]], [p0[1], p3[1]])
-            forward_edge = fit_line([p1[0], p2[0]], [p1[1], p2[1]])
+            try:
+                edge = fit_line([p0[0], p1[0]], [p0[1], p1[1]])
+                backward_edge = fit_line([p0[0], p3[0]], [p0[1], p3[1]])
+                forward_edge = fit_line([p1[0], p2[0]], [p1[1], p2[1]])
+            except:
+                # ignore this bbox
+                cv2.fillPoly(training_mask, poly.astype(np.int32)[np.newaxis, :, :], 0)
+                cv2.fillPoly(score_map, shrinked_poly, 0)
+                break
+                
             if point_dist_to_line(p0, p1, p2) > point_dist_to_line(p0, p1, p3):
                 # 平行线经过p2
                 if edge[1] == 0:
