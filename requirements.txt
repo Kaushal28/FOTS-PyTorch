@@ -5,4 +5,4 @@ numpy==1.19.5
 pandas==1.1.5
 tqdm==4.55.1
 lanms==1.0.2
-Polygon3
+Polygon3==3.0.8

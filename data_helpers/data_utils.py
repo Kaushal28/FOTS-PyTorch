@@ -556,21 +556,15 @@ def sort_rectangle(poly):
     # First find the lowest point
     p_lowest = np.argmax(poly[:, 1])
     if np.count_nonzero(poly[:, 1] == poly[p_lowest, 1]) == 2:
-        # 底边平行于X轴, 那么p0为左上角
         p0_index = np.argmin(np.sum(poly, axis = 1))
         p1_index = (p0_index + 1) % 4
         p2_index = (p0_index + 2) % 4
         p3_index = (p0_index + 3) % 4
         return poly[[p0_index, p1_index, p2_index, p3_index]], 0.
     else:
-        # 找到最低点右边的点
         p_lowest_right = (p_lowest - 1) % 4
-        p_lowest_left = (p_lowest + 1) % 4
         angle = np.arctan(
             -(poly[p_lowest][1] - poly[p_lowest_right][1]) / (poly[p_lowest][0] - poly[p_lowest_right][0]))
-        # assert angle > 0
-        if angle <= 0:
-            print(angle, poly[p_lowest], poly[p_lowest_right])
         if angle / np.pi * 180 > 45:
             # 这个点为p2
             p2_index = p_lowest
@@ -588,6 +582,10 @@ def sort_rectangle(poly):
 
 
 def generate_rbbox_v2(image, polys, tags):
+    """
+    Generate RBOX (Rotated bbox) as per this paper:
+    https://arxiv.org/pdf/1704.03155.pdf
+    """
     h, w, _ = image.shape
     poly_mask = np.zeros((h, w), dtype = np.uint8)
     score_map = np.zeros((h, w), dtype = np.uint8)
