@@ -241,8 +241,8 @@ class Synth800kPreprocessedDataset(Dataset):
         geo_map = np.load(f'{self.base_dir}/{data["geo_maps"]}').astype(np.float32)
         training_mask = np.load(f'{self.base_dir}/{data["training_masks"]}').astype(np.float32)
         bboxes = np.load(f'{self.base_dir}/{data["bboxes"]}').astype(np.float32)
-        transcripts = np.load(f'{self.base_dir}/{data["transcripts"]}').astype(np.float32)
-        mapping = np.load(f'{self.base_dir}/{data["mapping"]}').astype(np.int32)
+        transcripts = np.load(f'{self.base_dir}/{data["transcripts"]}')
+        mapping = np.load(f'{self.base_dir}/{data["mappings"]}').astype(np.int16)
 
         return (
             f'{self.base_dir}/{data["images"]}',
