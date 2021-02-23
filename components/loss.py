@@ -171,7 +171,7 @@ class FOTSLoss(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.rec_loss = RecognitionLoss()
-        self.det_loss = DetectionLoss(config)
+        self.det_loss = DetectionLoss()
         self.config = config
     
     def forward(
