@@ -7,11 +7,12 @@
         "shuffle": false
     },
     "epochs": 40,
-    "lr_schedular": "CosineAnnealingWarmRestarts",
+    "lr_schedular": "ReduceLROnPlateau",
     "lr_scheduler_config": {
-        "T_0": 8,
-        "T_mult": 1,
-        "eta_min": 0.000001,
+        "mode": "min",
+        "patience": 3,
+        "factor": 0.1,
+        "min_lr": 0.00001,
         "verbose": true
     },
     "optimizer": "Adam",
@@ -19,7 +20,6 @@
         "lr": 0.001
     },
     "model_save_path": "/content/drive/MyDrive/cs2",
-    "model_save_freq": 5,
     "fots_hyperparameters": {
         "lam_theta": 20,
         "lam_reg": 1,

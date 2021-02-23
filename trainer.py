@@ -173,9 +173,20 @@ class Train:
         elapsed_mins = int(elapsed_time / 60)
         elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
         return elapsed_mins, elapsed_secs
+    
+    def _save_model(self, name, model):
+        """Save the given model at given path."""
+        if not os.path.isdir(self.config["model_save_path"]):
+            os.makedirs(self.config["model_save_path"], exist_ok=True)
+        torch.save(
+            self.model.state_dict(),
+            os.path.join(self.config["model_save_path"], name)
+        )
 
     def train(self):
         """Train the model for given numner of epochs."""
+
+        best_val_loss = float('inf')
         for epoch in range(self.epochs):
             # Epoch start time
             start_time = time()
@@ -194,14 +205,14 @@ class Train:
 
             epoch_mins, epoch_secs = self.epoch_time(start_time, end_time)
 
-            # Save the model at "save_freq" and at last epoch
-            if ((epoch+1) % self.config["model_save_freq"]) == 0 or epoch+1 == self.epochs:
-                if not os.path.isdir(self.config["model_save_path"]):
-                    os.makedirs(self.config["model_save_path"], exist_ok=True)
-                torch.save(
-                    self.model.state_dict(),
-                    os.path.join(self.config["model_save_path"], f'FOTS_epoch{epoch+1}.pt')
-                )
+            # Save the model when loss improves and at last epoch
+            if val_loss < best_val_loss:
+                print(f"Loss reduced from previous best {best_val_loss} to {val_loss}. Saving the model!")
+                self._save_model(f"FOTS_epoch{epoch+1}.pt", model)
+                best_val_loss = val_loss
+            
+            if epoch+1 == self.epochs:
+                self._save_model(f"FOTS_epoch{epoch+1}.pt", model)
 
             # Log the training progress per epoch
             # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')

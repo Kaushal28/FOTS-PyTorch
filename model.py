@@ -112,14 +112,12 @@ class FOTSModel(nn.Module):
             score = per_pixel_preds.permute(0, 2, 3, 1).detach().cpu().numpy()
             geometry = loc_features.permute(0, 2, 3, 1).detach().cpu().numpy()
 
-            timer = {'net': 0, 'restore': 0, 'nms': 0}
-
             pred_bboxes = []
             pred_mapping = []
             for i in range(score.shape[0]):
                 s = score[i, :, :, 0]
                 g = geometry[i, :, :, ]
-                bb, _ = Toolbox.detect(score_map=s, geo_map=g, timer=timer)
+                bb = Toolbox.detect(score_map=s, geo_map=g)
                 bb_size = bb.shape[0]
 
                 if len(bb) > 0:
