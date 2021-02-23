@@ -117,9 +117,9 @@ class DetectionLoss(nn.Module):
         L_theta = 1 - torch.cos(theta_pred - theta_gt)
         L_g = L_AABB + 20 * L_theta
 
-        return torch.sum(L_g * y_true_cls * training_mask)/ torch.count_nonzero(y_true_cls * training_mask) + classification_loss
+        # return torch.sum(L_g * y_true_cls * training_mask)/ torch.count_nonzero(y_true_cls * training_mask) + classification_loss
 
-        # return torch.mean(L_g * y_true_cls * training_mask) + classification_loss
+        return torch.mean(L_g * y_true_cls * training_mask) + classification_loss
 
     def __dice_coefficient(self, y_true_cls, y_pred_cls,
                          training_mask):
