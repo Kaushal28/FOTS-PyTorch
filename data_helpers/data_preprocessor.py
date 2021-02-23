@@ -5,8 +5,8 @@ import pandas as pd
 
 from torch.utils.data import DataLoader
 
-from datasets import Synth800kDataset
-from data_utils import synth800k_collate
+from .datasets import Synth800kDataset
+from .data_utils import synth800k_collate
 
 from tqdm import tqdm
 
@@ -58,3 +58,5 @@ def preprocess(config):
         "training_masks": tm_list
     })
     data_df.to_csv(f"{config['output_dir']}/train.csv", index=False)
+
+    print(f"Generated ground truths for {len(data_df)} images.")

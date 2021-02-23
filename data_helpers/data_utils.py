@@ -726,7 +726,7 @@ def generate_rbbox_v2(image, polys, tags):
     return score_map, geo_map, training_mask, np.vstack(rectanges)
 
 
-def resize_image(image, image_size):
+def resize_image(image, image_size=512):
     """
     Resize the given image to image_size * image_size
     shaped square image.

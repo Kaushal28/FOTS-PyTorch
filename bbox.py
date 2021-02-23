@@ -162,48 +162,37 @@ class Toolbox:
         return im, (ratio_h, ratio_w)
 
     @staticmethod
-    def detect(score_map, geo_map, timer, score_map_thresh = 0.5, box_thresh = 0.8, nms_thres = 0.1):
-        '''1e-5
-        restore text boxes from score map and geo map
-        :param score_map:
-        :param geo_map:
-        :param timer:
-        :param score_map_thresh: threshhold for score map
-        :param box_thresh: threshhold for boxes
-        :param nms_thres: threshold for nms
-        :return:
+    def detect(score_map, geo_map, score_map_thresh=0.8, box_thresh=0.1, nms_thres = 0.1):
         '''
-        #import pdb; pdb.set_trace()
+        score_map: 128*128
+        geo_map: 128*128*5
+        '''
         if len(score_map.shape) == 4:
             score_map = score_map[0, :, :, 0]
             geo_map = geo_map[0, :, :, ]
+        
         # filter the score map
         xy_text = np.argwhere(score_map > score_map_thresh)
         # sort the text boxes via the y axis
         xy_text = xy_text[np.argsort(xy_text[:, 0])]
         # restore
-        start = time.time()
         text_box_restored = Toolbox.restore_rectangle_rbox(xy_text[:, ::-1] * 4, geo_map[xy_text[:, 0], xy_text[:, 1], :])  # N*4*2
-        # print('{} text boxes before nms'.format(text_box_restored.shape[0]))
         boxes = np.zeros((text_box_restored.shape[0], 9), dtype = np.float32)
         boxes[:, :8] = text_box_restored.reshape((-1, 8))
         boxes[:, 8] = score_map[xy_text[:, 0], xy_text[:, 1]]
-        timer['restore'] = time.time() - start
+        
         # nms part
-        start = time.time()
-        # boxes = nms_locality.nms_locality(boxes.astype(np.float64), nms_thres)
         boxes = lanms.merge_quadrangle_n9(boxes.astype('float32'), nms_thres)
-        timer['nms'] = time.time() - start
         if boxes.shape[0] == 0:
-            return np.array([]), timer
+            return np.array([])
 
         # here we filter some low score boxes by the average score map, this is different from the orginal paper
-        for i, box in enumerate(boxes):
-            mask = np.zeros_like(score_map, dtype = np.uint8)
-            cv2.fillPoly(mask, box[:8].reshape((-1, 4, 2)).astype(np.int32) // 4, 1)
-            boxes[i, 8] = cv2.mean(score_map, mask)[0]
-        #boxes = boxes[boxes[:, 8] > box_thresh]
-        return boxes, timer
+        # for i, box in enumerate(boxes):
+        #     mask = np.zeros_like(score_map, dtype = np.uint8)
+        #     cv2.fillPoly(mask, box[:8].reshape((-1, 4, 2)).astype(np.int32) // 4, 1)
+        #     boxes[i, 8] = cv2.mean(score_map, mask)[0]
+        # boxes = boxes[boxes[:, 8] > box_thresh]
+        return boxes
 
     @staticmethod
     def sort_poly(p):
