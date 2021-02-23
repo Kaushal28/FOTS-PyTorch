@@ -105,7 +105,7 @@ class RecognitionLoss(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.ctc_loss = CTCLoss(zero_infinity=True)
+        self.ctc_loss = CTCLoss()
     
     def forward(self, *x):
         gt, pred = x[0], x[1]
@@ -131,20 +131,19 @@ class FOTSLoss(nn.Module):
         y_pred_clf,
         y_true_reg,
         y_pred_reg,
+        y_true_recog,
+        y_pred_recog,
         training_mask
-        # ,y_true_recog,
-        # y_pred_recog
     ):
         detection_loss = self.det_loss(y_true_clf, y_pred_clf, y_true_reg, y_pred_reg, training_mask)
 
         # Comment following line for full training
-        return detection_loss
+        # return detection_loss
 
         # Calculate only if something was supposed to recognized
         recognition_loss = 0
         if y_true_recog:
             recognition_loss = self.rec_loss(y_true_recog, y_pred_recog)
-        
-        print(f'rec: {recognition_loss}')
+
         # combine rec. loss and det. loss using lambda recognition.
         return detection_loss + config["fots_hyperparameters"]["lam_recog"] * recognition_loss

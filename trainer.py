@@ -44,8 +44,7 @@ class Train:
         epoch_loss, total_metrics = 0, np.zeros(3)
 
         for i, batch in tqdm(enumerate(self.train_iterator), total=len(self.train_iterator), position=0, leave=True):
-            # image_paths, images, bboxs, transcripts, score_map, geo_map, mapping = batch
-            images, score_map, geo_map, training_mask = batch
+            image_paths, images, bboxes, transcripts, score_map, geo_map, training_mask, mapping = batch
 
             images = images.to(self.device)
             score_map = score_map.to(self.device)
@@ -53,48 +52,37 @@ class Train:
             training_mask = training_mask.to(self.device)
 
             self.optimizer.zero_grad()
-            
+    
             # Forward pass
-            # pred_score_map, pred_geo_map, pred_recog, pred_boxes, pred_mapping, indices = self.model(images, bboxs, mapping)
+            pred_score_map, pred_geo_map, pred_recog, pred_bboxes, pred_mapping, indices = self.model(images, bboxes, mapping)
 
-            # Forward pass
-            pred_score_map, pred_geo_map = self.model(images)
+            transcripts = transcripts[indices]
+            pred_boxes = pred_boxes[indices]
+            pred_mapping = mapping[indices]
+            # pred_fns = [image_paths[i] for i in pred_mapping]
+
+            labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
+            labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
+            recog = (labels, label_lengths)
 
             # Calculate loss
-            loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, training_mask)
+            loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask)
             # Backward pass
             loss.backward()
             self.optimizer.step()
 
             epoch_loss += loss.item()
 
-            # transcripts = transcripts[indices]
-            # pred_boxes = pred_boxes[indices]
-            # pred_mapping = mapping[indices]
-            # pred_fns = [image_paths[i] for i in pred_mapping]
-
-            # labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
-            # labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
-            # recog = (labels, label_lengths)
-
-            # # Calculate loss
-            # loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog)
-            # # Backward pass
-            # loss.backward()
-            # self.optimizer.step()
-
-            # epoch_loss += loss.item()
-            # print(f'### LOSS: {loss.item()}')
-            # pred_transcripts = []
-            # if len(pred_mapping) > 0:
-            #     pred, lengths = pred_recog
-            #     _, pred = pred.max(2)
-            #     for idx in range(lengths.numel()):
-            #         l = lengths[idx]
-            #         p = pred[:l, idx]
-            #         txt = self.transcript_encoder.decode(p, l)
-            #         pred_transcripts.append(txt)
-            #     pred_transcripts = np.array(pred_transcripts)
+            pred_transcripts = []
+            if len(pred_mapping) > 0:
+                pred, lengths = pred_recog
+                _, pred = pred.max(2)
+                for idx in range(lengths.numel()):
+                    l = lengths[idx]
+                    p = pred[:l, idx]
+                    txt = self.transcript_encoder.decode(p, l)
+                    pred_transcripts.append(txt)
+                pred_transcripts = np.array(pred_transcripts)
 
             # total_metrics += self._eval_metrics(
             #     (pred_boxes, pred_transcripts, pred_fns),
@@ -120,39 +108,43 @@ class Train:
 
         with torch.no_grad():
             for i, batch in tqdm(enumerate(self.valid_iterator), total=len(self.valid_iterator), position=0, leave=True):
-                # image_paths, images, bboxs, transcripts, score_map, geo_map, mapping = batch
-                images, score_map, geo_map, training_mask = batch
+                image_paths, images, bboxes, transcripts, score_map, geo_map, training_mask, mapping = batch
 
                 images = images.to(self.device)
                 score_map = score_map.to(self.device)
                 geo_map = geo_map.to(self.device)
                 training_mask = training_mask.to(self.device)
 
-
                 # Forward pass
-                # pred_score_map, pred_geo_map, pred_recog, pred_boxes, pred_mapping, indices = self.model(images, bboxs, mapping)
+                pred_score_map, pred_geo_map, pred_recog, pred_bboxes, pred_mapping, indices = self.model(images, bboxes, mapping)
 
-                # Forward pass
-                pred_score_map, pred_geo_map = self.model(images)
+                transcripts = transcripts[indices]
+                pred_boxes = pred_boxes[indices]
+                pred_mapping = mapping[indices]
+                # pred_fns = [image_paths[i] for i in pred_mapping]
+
+                labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
+                labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
+                recog = (labels, label_lengths)
 
                 # Calculate loss
-                val_loss += self.loss(score_map, pred_score_map, geo_map, pred_geo_map, training_mask)
+                val_loss += self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
 
-                # pred_transcripts = []
+                pred_transcripts = []
                 # pred_fns = []
-                # if len(pred_mapping) > 0:
-                #     pred_mapping = pred_mapping[indices]
-                #     pred_boxes = pred_boxes[indices]
-                #     pred_fns = [image_paths[i] for i in pred_mapping]
+                if len(pred_mapping) > 0:
+                    pred_mapping = pred_mapping[indices]
+                    pred_boxes = pred_boxes[indices]
+                    # pred_fns = [image_paths[i] for i in pred_mapping]
 
-                #     pred, lengths = pred_recog
-                #     _, pred = pred.max(2)
-                #     for i in range(lengths.numel()):
-                #         l = lengths[i]
-                #         p = pred[:l, i]
-                #         t = self.transcript_encoder.decode(p, l)
-                #         pred_transcripts.append(t)
-                #     pred_transcripts = np.array(pred_transcripts)
+                    pred, lengths = pred_recog
+                    _, pred = pred.max(2)
+                    for idx in range(lengths.numel()):
+                        l = lengths[idx]
+                        p = pred[:l, idx]
+                        t = self.transcript_encoder.decode(p, l)
+                        pred_transcripts.append(t)
+                    pred_transcripts = np.array(pred_transcripts)
 
                 # gt_fns = [image_paths[i] for i in mapping]
                 # total_metrics += self._eval_metrics((pred_boxes, pred_transcripts, pred_fns),

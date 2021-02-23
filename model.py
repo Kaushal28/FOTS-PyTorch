@@ -33,26 +33,26 @@ class FOTSModel(nn.Module):
         back_bone =  pretrainedmodels.__dict__['resnet50'](pretrained='imagenet')
         self.shared_conv = SharedConvolutions(back_bone=back_bone)
 
-        # n_class = len(classes) + 1  # 1 for "ctc blank" token (0)
-        # self.recognizer = Recognizer(n_class)
+        n_class = len(classes) + 1  # 1 for "ctc blank" token (0)
+        self.recognizer = Recognizer(n_class)
         self.detector = Detector()
-        # self.roirotate = ROIRotate()
+        self.roirotate = ROIRotate()
 
     def to(self, device):
         """Move the FOTS model to given device (GPU/CPU)."""
         self.detector.to(device)
-        # self.recognizer.to(device)
+        self.recognizer.to(device)
         self.shared_conv.to(device)
     
     def train(self):
         """Transition the FOTS model to training mode."""
-        # self.recognizer.train()
+        self.recognizer.train()
         self.detector.train()
         self.shared_conv.train()
     
     def eval(self):
         """Transition the FOTS model to evaluation mode."""
-        # self.recognizer.eval()
+        self.recognizer.eval()
         self.detector.eval()
         self.shared_conv.eval()
     
@@ -65,7 +65,7 @@ class FOTSModel(nn.Module):
             [
                 {'params': self.shared_conv.parameters()},
                 {'params': self.detector.parameters()},
-                # {'params': self.recognizer.parameters()},
+                {'params': self.recognizer.parameters()},
             ],
             **params
         )
@@ -77,20 +77,17 @@ class FOTSModel(nn.Module):
         """Check whether the FOTS model is in training mode."""
         return (
             self.detector.training
-            # and self.recognizer.training
+            and self.recognizer.training
             and self.shared_conv.training
         )
     
     def forward(self, x):
         """FOTS forward method."""
 
-        # images, bboxes, mappings = x
+        images, bboxes, mappings = x
 
         # Get the device
-        if x.is_cuda:
-            device = x.get_device()
-        else:
-            device = torch.device('cpu')
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Step 1: Extract shared features
         shared_features = self.shared_conv(x)
@@ -99,30 +96,32 @@ class FOTSModel(nn.Module):
         per_pixel_preds, loc_features = self.detector(shared_features)
 
         # Comment the following line if training for detection + recognition
-        return per_pixel_preds, loc_features
+        # return per_pixel_preds, loc_features
 
         # Step 3: RoIRotate
         if self.is_training:
             rois, lengths, indices = self.roirotate(shared_features, bboxes[:, :8], mappings)
-            # As mentioned in the paper, for training, the ground truth bboxes will be used
-            # because the predicted bboxes can harm the training process.
+            # As mentioned in the paper, while training, the ground truth bboxes will be used
+            # because the predicted bboxes can harm the training process because in the
+            # initial stage of training, bboxes might not be accurate.
             pred_mapping = mappings
             pred_bboxes = bboxes
         else:
+            # New shape: (bs, 128, 128, n_channels)
             score = per_pixel_preds.permute(0, 2, 3, 1).detach().cpu().numpy()
             geometry = loc_features.permute(0, 2, 3, 1).detach().cpu().numpy()
 
             pred_bboxes = []
             pred_mapping = []
-            for i in range(score.shape[0]):
-                s = score[i, :, :, 0]
-                g = geometry[i, :, :, ]
-                bb = Toolbox.detect(score_map=s, geo_map=g)
-                bb_size = bb.shape[0]
+            for idx in range(score.shape[0]):
+                bbox = Toolbox.detect(
+                    score_map=score[idx, :, :, 0],
+                    geo_map=geometry[idx, :, :, ]
+                )
 
-                if len(bb) > 0:
-                    pred_mapping.append(np.array([i] * bb_size))
-                    pred_bboxes.append(bb)
+                if len(bbox) > 0:
+                    pred_mapping.append(np.array([idx] * bbox.shape[0]))
+                    pred_bboxes.append(bbox)
 
             if len(pred_mapping) > 0:
                 pred_bboxes = np.concatenate(pred_bboxes)

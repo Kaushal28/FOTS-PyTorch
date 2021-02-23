@@ -240,7 +240,20 @@ class Synth800kPreprocessedDataset(Dataset):
         score_map = np.load(f'{self.base_dir}/{data["score_maps"]}').astype(np.float32)
         geo_map = np.load(f'{self.base_dir}/{data["geo_maps"]}').astype(np.float32)
         training_mask = np.load(f'{self.base_dir}/{data["training_masks"]}').astype(np.float32)
-        return torch.from_numpy(image), torch.from_numpy(score_map), torch.from_numpy(geo_map), training_mask
-    
+        bboxes = np.load(f'{self.base_dir}/{data["bboxes"]}').astype(np.float32)
+        transcripts = np.load(f'{self.base_dir}/{data["transcripts"]}').astype(np.float32)
+        mapping = np.load(f'{self.base_dir}/{data["mapping"]}').astype(np.int32)
+
+        return (
+            f'{self.base_dir}/{data["images"]}',
+            torch.from_numpy(image),
+            bboxes,
+            transcripts,
+            torch.from_numpy(score_map),
+            torch.from_numpy(geo_map),
+            training_mask,
+            mapping
+        )
+
     def __len__(self):
         return len(self.df)
