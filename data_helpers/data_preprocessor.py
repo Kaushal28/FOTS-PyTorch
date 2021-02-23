@@ -1,6 +1,4 @@
 import os
-import json
-import argparse
 
 import numpy as np
 import pandas as pd
@@ -13,8 +11,11 @@ from data_utils import synth800k_collate
 from tqdm import tqdm
 
 
-def main(config):
-    """Entry point."""
+def preprocess(config):
+    """
+    Preprocess the data to save GPU time while training because 
+    ground truth generation is very time consuming for FOTS.
+    """
     dataset = Synth800kDataset(config["data_dir"])
     data_loader = DataLoader(
         dataset,
@@ -57,19 +58,3 @@ def main(config):
         "training_masks": tm_list
     })
     data_df.to_csv(f"{config['output_dir']}/train.csv", index=False)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-c', '--config', default="../config/data_preprocessor_config.json",
-        type=str, help='Data preprocessor config file path.'
-    )
-    args = parser.parse_args()
-
-    if args.config is not None:
-        with open(args.config, "r") as f:
-            config = json.load(f)
-        main(config)
-    else:
-        print("Invalid data preprocessing configuration file provided.")
