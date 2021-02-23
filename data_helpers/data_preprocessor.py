@@ -30,6 +30,9 @@ def preprocess(config):
     os.makedirs(os.path.join(config["output_dir"], "score"), exist_ok=True)
     os.makedirs(os.path.join(config["output_dir"], "geo"), exist_ok=True)
     os.makedirs(os.path.join(config["output_dir"], "training_mask"), exist_ok=True)
+    os.makedirs(os.path.join(config["output_dir"], "bboxes"), exist_ok=True)
+    os.makedirs(os.path.join(config["output_dir"], "transcripts"), exist_ok=True)
+    os.makedirs(os.path.join(config["output_dir"], "mappings"), exist_ok=True)
 
     img_list, sm_list, gm_list, tm_list, bboxes, transcripts, mappings = [], [], [], [], [], [], []
     for idx, batch in tqdm(enumerate(data_loader), total=len(data_loader), position=0, leave=True):
@@ -42,14 +45,18 @@ def preprocess(config):
             sm_list.append(f"score/{img_name}_score_map.npy")
             gm_list.append(f"geo/{img_name}_geo_map.npy")
             tm_list.append(f"training_mask/{img_name}_tm.npy")
-            bboxes.append(bbox)
-            transcripts.append(txt)
-            mappings.append(map)
+            bboxes.append(f"bboxes/batch_{idx}_bboxes.npy")
+            transcripts.append(f"transcripts/batch_{idx}_transcripts.npy")
+            mappings.append(f"mappings/batch_{idx}_mappings.npy")
 
             np.save(f"{config['output_dir']}/image/{img_name}.npy", img.numpy().astype(np.uint8))
             np.save(f"{config['output_dir']}/score/{img_name}_score_map.npy", scr.numpy().astype(np.uint8))
             np.save(f"{config['output_dir']}/geo/{img_name}_geo_map.npy", geo.numpy().astype(np.float32))
             np.save(f"{config['output_dir']}/training_mask/{img_name}_tm.npy", tm.numpy().astype(np.uint8))
+        
+        np.save(f"{config['output_dir']}/bboxes/batch_{idx}_bboxes.npy", bboxs.astype(np.float32))
+        np.save(f"{config['output_dir']}/transcripts/batch_{idx}_transcripts.npy", texts)
+        np.save(f"{config['output_dir']}/mappings/batch_{idx}_mappings.npy", mapping.astype(np.int16))
         
         if idx == config["num_iterations"]:
             break
