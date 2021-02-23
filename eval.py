@@ -26,7 +26,7 @@ def _load_image(image_path):
     """Load image form given path."""
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-    image = resize_image(image, 512)
+    image, _, _ = resize_image(image, 512)
 
     image = torch.from_numpy(image[np.newaxis, :, :, :]).permute(0, 3, 1, 2)
     image = image.to(DEVICE)
@@ -35,9 +35,9 @@ def _load_image(image_path):
 
 def inference(args):
     """FOTS Inference on give images."""
-    model = _load_model(args["model"])
-    for image_path in os.listdir(args["input_dir"]):
-        image = _load_image(image_path)
+    model = _load_model(args.model)
+    for image_path in os.listdir(args.input_dir):
+        image = _load_image(os.path.join(args.input_dir, image_path))
 
         # Forward pass
         pred_score_map, pred_geo_map = model(image)
@@ -56,20 +56,20 @@ def inference(args):
         
         pred_bboxes = np.concatenate(pred_bboxes)
 
-        image = image.permute(0, 2, 3, 1)[0]
-        
+        image = image.permute(0, 2, 3, 1)[0].cpu().detach().numpy()
+
         for i in range(pred_bboxes.shape[0]):
             # Define predicted rectangle vertices
             vertices = [
-                (pred_bboxes[i][0], pred_bboxes[i][1]),
-                (pred_bboxes[i][2], pred_bboxes[i][3]),
-                (pred_bboxes[i][4], pred_bboxes[i][5]),
-                (pred_bboxes[i][6], pred_bboxes[i][7])
+                [pred_bboxes[i][0], pred_bboxes[i][1]],
+                [pred_bboxes[i][2], pred_bboxes[i][3]],
+                [pred_bboxes[i][4], pred_bboxes[i][5]],
+                [pred_bboxes[i][6], pred_bboxes[i][7]]
             ]
-            cv2.polylines(image, vertices, isClosed=True, color=(255, 255, 0), thickness=1)
+            cv2.polylines(image, [np.array(vertices).astype(np.int32)], isClosed=True, color=(255, 255, 0), thickness=1)
         
         # Save the image
-        cv2.imwrite(os.path.join(args["output_dir"], os.path.basename(image_path)), image)
+        cv2.imwrite(os.path.join(args.output_dir, os.path.basename(image_path)), image)
 
 
 if __name__ == "__main__":
