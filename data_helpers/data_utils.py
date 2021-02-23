@@ -691,6 +691,8 @@ def generate_rbbox_v2(image, polys, tags):
             new_p2 = line_cross_point(backward_opposite, edge_opposite)
             fitted_parallelograms.append([new_p0, new_p1, new_p2, new_p3, new_p0])
         areas = [Polygon(t).area for t in fitted_parallelograms]
+        if len(areas) == 0:
+            continue
         parallelogram = np.array(fitted_parallelograms[np.argmin(areas)][:-1], dtype = np.float32)
         # sort thie polygon
         parallelogram_coord_sum = np.sum(parallelogram, axis = 1)
