@@ -179,7 +179,7 @@ class Train:
         if not os.path.isdir(self.config["model_save_path"]):
             os.makedirs(self.config["model_save_path"], exist_ok=True)
         torch.save(
-            self.model.state_dict(),
+            model.state_dict(),
             os.path.join(self.config["model_save_path"], name)
         )
 
@@ -208,11 +208,11 @@ class Train:
             # Save the model when loss improves and at last epoch
             if val_loss < best_val_loss:
                 print(f"Loss reduced from previous best {best_val_loss} to {val_loss}. Saving the model!")
-                self._save_model(f"FOTS_epoch{epoch+1}.pt", model)
+                self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
                 best_val_loss = val_loss
             
             if epoch+1 == self.epochs:
-                self._save_model(f"FOTS_epoch{epoch+1}.pt", model)
+                self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
 
             # Log the training progress per epoch
             # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
