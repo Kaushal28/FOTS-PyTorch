@@ -44,7 +44,7 @@ class Train:
         epoch_loss, total_metrics = 0, np.zeros(3)
 
         for i, batch in tqdm(enumerate(self.train_iterator), total=len(self.train_iterator), position=0, leave=True):
-            image_paths, images, bboxes, transcripts, score_map, geo_map, training_mask, mapping = batch
+            image_paths, images, bboxes, training_mask, transcripts, score_map, geo_map, mapping = batch
 
             images = images.to(self.device)
             score_map = score_map.to(self.device)
@@ -108,7 +108,7 @@ class Train:
 
         with torch.no_grad():
             for i, batch in tqdm(enumerate(self.valid_iterator), total=len(self.valid_iterator), position=0, leave=True):
-                image_paths, images, bboxes, transcripts, score_map, geo_map, training_mask, mapping = batch
+                image_paths, images, bboxes, training_mask, transcripts, score_map, geo_map, mapping = batch
 
                 images = images.to(self.device)
                 score_map = score_map.to(self.device)

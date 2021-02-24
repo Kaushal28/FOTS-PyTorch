@@ -90,7 +90,7 @@ class FOTSModel(nn.Module):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Step 1: Extract shared features
-        shared_features = self.shared_conv(x)
+        shared_features = self.shared_conv(images)
 
         # Step 2: Text detection from shared features using detector branch
         per_pixel_preds, loc_features = self.detector(shared_features)
