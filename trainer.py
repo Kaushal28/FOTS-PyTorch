@@ -59,7 +59,7 @@ class Train:
             transcripts = transcripts[indices]
             pred_boxes = pred_bboxes[indices]
             pred_mapping = mapping[indices]
-            # pred_fns = [image_paths[i] for i in pred_mapping]
+            pred_fns = [image_paths[i] for i in pred_mapping]
 
             labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
             labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
@@ -84,27 +84,26 @@ class Train:
                     pred_transcripts.append(txt)
                 pred_transcripts = np.array(pred_transcripts)
 
-            # total_metrics += self._eval_metrics(
-            #     (pred_boxes, pred_transcripts, pred_fns),
-            #     (bboxs, transcripts, pred_fns)
-            # )
+            total_metrics += self._eval_metrics(
+                (pred_boxes, pred_transcripts, pred_fns),
+                (bboxes, transcripts, pred_fns)
+            )
         
-        return (
-            epoch_loss / len(self.train_iterator)
-        )
         # return (
-        #     epoch_loss / len(self.train_iterator),
-        #     total_metrics[0] / len(self.train_iterator),  # precision
-        #     total_metrics[1] / len(self.train_iterator),  # recall
-        #     total_metrics[2] / len(self.train_iterator)  # f1-score
+        #     epoch_loss / len(self.train_iterator)
         # )
+        return (
+            epoch_loss / len(self.train_iterator),
+            total_metrics[0] / len(self.train_iterator),  # precision
+            total_metrics[1] / len(self.train_iterator),  # recall
+            total_metrics[2] / len(self.train_iterator)  # f1-score
+        )
 
     def eval_epoch(self):
         """Validate after training a single epoch."""
         self.model.eval()
-        # total_metrics = np.zeros(3)
-
-        val_loss = 0
+        total_metrics = np.zeros(3)
+        # val_loss = 0
 
         with torch.no_grad():
             for i, batch in tqdm(enumerate(self.valid_iterator), total=len(self.valid_iterator), position=0, leave=True):
@@ -131,11 +130,11 @@ class Train:
                 # val_loss += self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
 
                 pred_transcripts = []
-                # pred_fns = []
+                pred_fns = []
                 if len(pred_mapping) > 0:
                     pred_mapping = pred_mapping[indices]
                     pred_boxes = pred_bboxes[indices]
-                    # pred_fns = [image_paths[i] for i in pred_mapping]
+                    pred_fns = [image_paths[i] for i in pred_mapping]
 
                     pred, lengths = pred_recog
                     _, pred = pred.max(2)
@@ -146,18 +145,18 @@ class Train:
                         pred_transcripts.append(t)
                     pred_transcripts = np.array(pred_transcripts)
 
-                # gt_fns = [image_paths[i] for i in mapping]
-                # total_metrics += self._eval_metrics((pred_boxes, pred_transcripts, pred_fns),
-                #                                         (bboxs, transcripts, gt_fns))
+                gt_fns = [image_paths[i] for i in mapping]
+                total_metrics += self._eval_metrics((pred_boxes, pred_transcripts, pred_fns),
+                                                        (bboxes, transcripts, gt_fns))
 
         # return val_loss / len(self.valid_iterator)
-        return 0
+        # return 0
         
-        # return (
-        #     total_metrics[0] / len(self.train_iterator),  # precision
-        #     total_metrics[1] / len(self.train_iterator),  # recall
-        #     total_metrics[2] / len(self.train_iterator)  # f1-score
-        # )
+        return (
+            total_metrics[0] / len(self.train_iterator),  # precision
+            total_metrics[1] / len(self.train_iterator),  # recall
+            total_metrics[2] / len(self.train_iterator)  # f1-score
+        )
     
     @staticmethod
     def epoch_time(start_time, end_time):

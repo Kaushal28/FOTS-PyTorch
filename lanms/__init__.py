@@ -4,7 +4,7 @@ import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
-if subprocess.call(['make', '-C', BASE_DIR], stdout=subprocess.DEVNULL) != 0:
+if subprocess.call(['make', '-C', BASE_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) != 0:
     raise RuntimeError('Cannot compile lanms: {}'.format(BASE_DIR))
 
 
