@@ -46,7 +46,11 @@ class TranscriptEncoder:
             length = [len(s) for s in text]
             text = ''.join(text)
             text, _ = self.encode(text)
-        return (torch.tensor(text), torch.tensor(length))
+        if not torch.is_tensor(text):
+            text = torch.tensor(text)
+        if not torch.is_tensor(length):
+            length = torch.tensor(length)
+        return text, length
 
     def decode(self, t, length, raw=False):
         """

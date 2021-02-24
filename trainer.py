@@ -57,7 +57,7 @@ class Train:
             pred_score_map, pred_geo_map, pred_recog, pred_bboxes, pred_mapping, indices = self.model(images, bboxes, mapping)
 
             transcripts = transcripts[indices]
-            pred_boxes = pred_boxes[indices]
+            pred_boxes = pred_bboxes[indices]
             pred_mapping = mapping[indices]
             # pred_fns = [image_paths[i] for i in pred_mapping]
 
@@ -119,7 +119,7 @@ class Train:
                 pred_score_map, pred_geo_map, pred_recog, pred_bboxes, pred_mapping, indices = self.model(images, bboxes, mapping)
 
                 transcripts = transcripts[indices]
-                pred_boxes = pred_boxes[indices]
+                pred_boxes = pred_bboxes[indices]
                 pred_mapping = mapping[indices]
                 # pred_fns = [image_paths[i] for i in pred_mapping]
 
@@ -134,7 +134,7 @@ class Train:
                 # pred_fns = []
                 if len(pred_mapping) > 0:
                     pred_mapping = pred_mapping[indices]
-                    pred_boxes = pred_boxes[indices]
+                    pred_boxes = pred_bboxes[indices]
                     # pred_fns = [image_paths[i] for i in pred_mapping]
 
                     pred, lengths = pred_recog

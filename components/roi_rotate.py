@@ -65,8 +65,8 @@ class ROIRotate(nn.Module):
 
         matrixes = torch.stack(matrixes)
         images = torch.stack(images)
-        grid = nn.functional.affine_grid(matrixes, images.size())
-        feature_rotated = nn.functional.grid_sample(images, grid)
+        grid = nn.functional.affine_grid(matrixes, images.size(), align_corners=True)
+        feature_rotated = nn.functional.grid_sample(images, grid, align_corners=True)
 
         channels = feature_rotated.shape[1]
         cropped_images_padded = torch.zeros((len(feature_rotated), channels, self.height, max_width),

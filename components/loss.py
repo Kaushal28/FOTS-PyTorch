@@ -146,4 +146,4 @@ class FOTSLoss(nn.Module):
             recognition_loss = self.rec_loss(y_true_recog, y_pred_recog)
 
         # combine rec. loss and det. loss using lambda recognition.
-        return detection_loss + config["fots_hyperparameters"]["lam_recog"] * recognition_loss
+        return detection_loss + self.config["fots_hyperparameters"]["lam_recog"] * recognition_loss
