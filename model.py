@@ -81,7 +81,7 @@ class FOTSModel(nn.Module):
             and self.shared_conv.training
         )
     
-    def forward(self, x):
+    def forward(self, *x):
         """FOTS forward method."""
 
         images, bboxes, mappings = x

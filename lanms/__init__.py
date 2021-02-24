@@ -4,7 +4,7 @@ import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
-if subprocess.call(['make', '-C', BASE_DIR]) != 0:  # return value
+if subprocess.call(['make', '-C', BASE_DIR], stdout=subprocess.DEVNULL) != 0:
     raise RuntimeError('Cannot compile lanms: {}'.format(BASE_DIR))
 
 
@@ -17,4 +17,3 @@ def merge_quadrangle_n9(polys, thres=0.3, precision=10000):
     ret = np.array(nms_impl(p, thres), dtype='float32')
     ret[:,:8] /= precision
     return ret
-

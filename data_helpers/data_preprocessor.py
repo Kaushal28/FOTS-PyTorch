@@ -6,7 +6,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 
 from .datasets import Synth800kDataset
-from .data_utils import icdar_collate
+from .data_utils import synth800k_collate
 
 from tqdm import tqdm
 
@@ -23,7 +23,7 @@ def preprocess(config):
         pin_memory=True,
         batch_size=config["batch_size"],
         shuffle=False,
-        collate_fn=icdar_collate
+        collate_fn=synth800k_collate
     )
 
     os.makedirs(os.path.join(config["output_dir"], "image"), exist_ok=True)
@@ -32,12 +32,11 @@ def preprocess(config):
     os.makedirs(os.path.join(config["output_dir"], "training_mask"), exist_ok=True)
     os.makedirs(os.path.join(config["output_dir"], "bboxes"), exist_ok=True)
     os.makedirs(os.path.join(config["output_dir"], "transcripts"), exist_ok=True)
-    os.makedirs(os.path.join(config["output_dir"], "mappings"), exist_ok=True)
 
     img_list, sm_list, gm_list, tm_list, bboxes, transcripts, mappings = [], [], [], [], [], [], []
     for idx, batch in tqdm(enumerate(data_loader), total=len(data_loader), position=0, leave=True):
-        image_paths, images, bboxs, training_masks, texts, score_maps, geo_maps, mapping = batch
-        for pth, img, bbox, txt, map, scr, geo, tm in zip(image_paths, images, bboxs, texts, mapping, score_maps, geo_maps, training_masks):
+        image_paths, images, bboxs, texts, score_maps, geo_maps, training_masks = batch
+        for pth, img, bbox, txt, scr, geo, tm in zip(image_paths, images, bboxs, texts, score_maps, geo_maps, training_masks):
             img_pth = pth.split("/")[-2:]
             img_name = img_pth[-1].split(".")[0]
 
@@ -45,18 +44,15 @@ def preprocess(config):
             sm_list.append(f"score/{img_name}_score_map.npy")
             gm_list.append(f"geo/{img_name}_geo_map.npy")
             tm_list.append(f"training_mask/{img_name}_tm.npy")
-            bboxes.append(f"bboxes/batch_{idx}_bboxes.npy")
-            transcripts.append(f"transcripts/batch_{idx}_transcripts.npy")
-            mappings.append(f"mappings/batch_{idx}_mappings.npy")
+            bboxes.append(f"bboxes/{img_name}_bboxes.npy")
+            transcripts.append(f"transcripts/{img_name}_transcripts.npy")
 
             np.save(f"{config['output_dir']}/image/{img_name}.npy", img.numpy().astype(np.uint8))
             np.save(f"{config['output_dir']}/score/{img_name}_score_map.npy", scr.numpy().astype(np.uint8))
             np.save(f"{config['output_dir']}/geo/{img_name}_geo_map.npy", geo.numpy().astype(np.float32))
             np.save(f"{config['output_dir']}/training_mask/{img_name}_tm.npy", tm.numpy().astype(np.uint8))
-        
-        np.save(f"{config['output_dir']}/bboxes/batch_{idx}_bboxes.npy", bboxs.astype(np.float32))
-        np.save(f"{config['output_dir']}/transcripts/batch_{idx}_transcripts.npy", texts)
-        np.save(f"{config['output_dir']}/mappings/batch_{idx}_mappings.npy", mapping.astype(np.int16))
+            np.save(f"{config['output_dir']}/bboxes/{img_name}_bboxes.npy", bbox.astype(np.float32))
+            np.save(f"{config['output_dir']}/transcripts/{img_name}_transcripts.npy", txt)
         
         if idx == config["num_iterations"]:
             break
@@ -67,8 +63,7 @@ def preprocess(config):
         "geo_maps": gm_list,
         "training_masks": tm_list,
         "bboxes": bboxes,
-        "transcripts": transcripts,
-        "mappings": mappings
+        "transcripts": transcripts
     })
     data_df.to_csv(f"{config['output_dir']}/train.csv", index=False)
 

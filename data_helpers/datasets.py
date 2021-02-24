@@ -246,11 +246,11 @@ class Synth800kPreprocessedDataset(Dataset):
 
         return (
             f'{self.base_dir}/{data["images"]}',
-            torch.from_numpy(image),
+            image,
             bboxes,
             transcripts,
-            torch.from_numpy(score_map),
-            torch.from_numpy(geo_map),
+            score_map,
+            geo_map,
             training_mask,
             mapping
         )

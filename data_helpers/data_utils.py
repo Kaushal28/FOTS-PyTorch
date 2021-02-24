@@ -114,8 +114,7 @@ def synth800k_collate(batch):
     Collate function for ICDAR dataset. It receives a batch of ground truths
     and formats it in required format.
     """
-    image_paths, img, bboxes, transcripts, score_map, geo_map, training_mask, mappings = zip(*batch)
-
+    image_paths, img, bboxes, training_mask, transcripts, score_map, geo_map = zip(*batch)
     batch_size = len(score_map)
     images, score_maps, geo_maps, training_masks = [], [], [], []
 
@@ -132,7 +131,7 @@ def synth800k_collate(batch):
     geo_maps = torch.stack(geo_maps, 0)
     training_masks = torch.stack(training_masks, 0)
 
-    return image_paths, images, bboxes, transcripts, score_maps, geo_maps, training_masks, mappings
+    return image_paths, images, bboxes, transcripts, score_maps, geo_maps, training_masks
 
 
 def l2_norm(p1, p2=np.array([0, 0])):
