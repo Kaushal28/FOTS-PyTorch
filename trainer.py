@@ -207,10 +207,10 @@ class Train:
             #     self._save_model(f"FOTS_best.pt", self.model)
             #     best_val_loss = val_loss
             
-            # if epoch+1 == self.epochs:
-            #     self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
+            if epoch+1 == self.epochs:
+                self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
 
-            self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
+            # self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
 
             # Log the training progress per epoch
             # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
