@@ -41,7 +41,7 @@ class Train:
     def train_epoch(self, epoch):
         """Train a single epoch."""
         self.model.train()
-        epoch_det_loss, epoch_rec_loss, total_metrics = 0, np.zeros(3)
+        epoch_det_loss, epoch_rec_loss, total_metrics = 0, 0, np.zeros(3)
 
         for i, batch in tqdm(enumerate(self.train_iterator), total=len(self.train_iterator), position=0, leave=True):
             image_paths, images, bboxes, training_mask, transcripts, score_map, geo_map, mapping = batch
