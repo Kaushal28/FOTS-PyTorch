@@ -14,7 +14,7 @@ import pandas as pd
 
 from trainer import Train
 from data_helpers.datasets import ICDARDataset, Synth800kPreprocessedDataset
-from data_helpers.data_utils import icdar_collate
+from data_helpers.data_utils import synth800k_collate
 from components.loss import FOTSLoss
 from model import FOTSModel
 from trainer import Train
@@ -50,16 +50,16 @@ def main(config):
         icdar_train_dataset,
         pin_memory=True,
         **config["dataset_config"],
-        worker_init_fn=seed_worker
-        # collate_fn=icdar_collate
+        worker_init_fn=seed_worker,
+        collate_fn=synth800k_collate
     )
 
     icdar_val_data_loader = DataLoader(
         icdar_val_dataset,
         **config["dataset_config"],
         pin_memory=True,
-        worker_init_fn=seed_worker
-        # collate_fn=icdar_collate
+        worker_init_fn=seed_worker,
+        collate_fn=synth800k_collate
     )
 
     # Initialize the model

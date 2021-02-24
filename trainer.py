@@ -199,7 +199,7 @@ class Train:
 
             # Save the model when loss improves and at last epoch
             if val_loss < best_val_loss:
-                print(f"Loss reduced from previous best {best_val_loss} to {val_loss}. Saving the model!")
+                print(f"Epoch {epoch+1}: Loss reduced from previous best {best_val_loss:.4f} to {val_loss:.4f}. Saving the model!")
                 self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
                 best_val_loss = val_loss
             
