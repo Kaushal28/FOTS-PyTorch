@@ -78,17 +78,17 @@ def icdar_collate(batch):
     Collate function for ICDAR dataset. It receives a batch of ground truths
     and formats it in required format.
     """
-    image_paths, img, boxes, training_mask, transcripts, score_map, geo_map = zip(*batch)
+    image_paths, img, boxes, transcripts, score_map, geo_map, training_mask = zip(*batch)
     batch_size = len(score_map)
     images, score_maps, geo_maps, training_masks = [], [], [], [] 
 
     # convert all numpy arrays to tensors
     for idx in range(batch_size):
         if img[idx] is not None:
-            images.append(torch.from_numpy(img[idx]).permute(2, 0, 1))
-            score_maps.append(torch.from_numpy(score_map[idx]).permute(2, 0, 1))
-            geo_maps.append(torch.from_numpy(geo_map[idx]).permute(2, 0, 1))
-            training_masks.append(torch.from_numpy(training_mask[idx]).permute(2, 0, 1))
+            images.append(torch.from_numpy(img[idx]))
+            score_maps.append(torch.from_numpy(score_map[idx]))
+            geo_maps.append(torch.from_numpy(geo_map[idx]))
+            training_masks.append(torch.from_numpy(training_mask[idx]))
 
     images = torch.stack(images, 0)
     score_maps = torch.stack(score_maps, 0)
