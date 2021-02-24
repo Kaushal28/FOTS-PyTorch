@@ -10,7 +10,7 @@ from torch import nn, optim
 import numpy as np
 import pandas as pd
 
-# from eval_tools.icdar2015 import eval as icdar_eval
+from eval_tools.icdar2015 import eval as icdar_eval
 
 from trainer import Train
 from data_helpers.datasets import ICDARDataset, Synth800kPreprocessedDataset

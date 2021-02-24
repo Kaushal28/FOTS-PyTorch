@@ -41,7 +41,7 @@ class Train:
     def train_epoch(self, epoch):
         """Train a single epoch."""
         self.model.train()
-        epoch_loss, total_metrics = 0, np.zeros(3)
+        epoch_det_loss, epoch_rec_loss, total_metrics = 0, np.zeros(3)
 
         for i, batch in tqdm(enumerate(self.train_iterator), total=len(self.train_iterator), position=0, leave=True):
             image_paths, images, bboxes, training_mask, transcripts, score_map, geo_map, mapping = batch
@@ -66,12 +66,14 @@ class Train:
             recog = (labels, label_lengths)
 
             # Calculate loss
-            loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask)
+            det_loss, rec_loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask)
+            loss = det_loss + self.config["fots_hyperparameters"]["lam_recog"] * rec_loss
             # Backward pass
             loss.backward()
             self.optimizer.step()
 
-            epoch_loss += loss.item()
+            epoch_det_loss += det_loss.item()
+            epoch_rec_loss += rec_loss.item()
 
             pred_transcripts = []
             if len(pred_mapping) > 0:
@@ -93,7 +95,8 @@ class Train:
         #     epoch_loss / len(self.train_iterator)
         # )
         return (
-            epoch_loss / len(self.train_iterator),
+            epoch_det_loss / len(self.train_iterator),
+            epoch_rec_loss / len(self.train_iterator),
             total_metrics[0] / len(self.train_iterator),  # precision
             total_metrics[1] / len(self.train_iterator),  # recall
             total_metrics[2] / len(self.train_iterator)  # f1-score
@@ -133,7 +136,7 @@ class Train:
                 pred_fns = []
                 if len(pred_mapping) > 0:
                     pred_mapping = pred_mapping[indices]
-                    pred_boxes = pred_bboxes[indices]
+                    pred_bboxes = pred_bboxes[indices]
                     pred_fns = [image_paths[i] for i in pred_mapping]
 
                     pred, lengths = pred_recog
@@ -146,7 +149,7 @@ class Train:
                     pred_transcripts = np.array(pred_transcripts)
 
                 gt_fns = [image_paths[i] for i in mapping]
-                total_metrics += self._eval_metrics((pred_boxes, pred_transcripts, pred_fns),
+                total_metrics += self._eval_metrics((pred_bboxes, pred_transcripts, pred_fns),
                                                         (bboxes, transcripts, gt_fns))
 
         # return val_loss / len(self.valid_iterator)
@@ -184,14 +187,14 @@ class Train:
             start_time = time()
 
             # Train
-            loss, train_precision, train_recall, train_f1 = self.train_epoch(epoch)
+            train_det_loss, train_rec_loss, train_precision, train_recall, train_f1 = self.train_epoch(epoch)
             # train_loss = self.train_epoch(epoch)
             # Evaluate
             val_precision, val_recall, val_f1 = self.eval_epoch()
             # val_loss = self.eval_epoch()
 
             # self.lr_scheduler.step(val_loss)
-            self.lr_scheduler.step()
+            # self.lr_scheduler.step()
 
             # Epoch start time
             end_time = time()
@@ -199,18 +202,22 @@ class Train:
             epoch_mins, epoch_secs = self.epoch_time(start_time, end_time)
 
             # Save the model when loss improves and at last epoch
-            if val_loss < best_val_loss:
-                print(f"Epoch {epoch+1}: Loss reduced from previous best {best_val_loss:.4f} to {val_loss:.4f}. Saving the model!")
-                self._save_model(f"FOTS_best.pt", self.model)
-                best_val_loss = val_loss
+            # if val_loss < best_val_loss:
+            #     print(f"Epoch {epoch+1}: Loss reduced from previous best {best_val_loss:.4f} to {val_loss:.4f}. Saving the model!")
+            #     self._save_model(f"FOTS_best.pt", self.model)
+            #     best_val_loss = val_loss
             
-            if epoch+1 == self.epochs:
-                self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
+            # if epoch+1 == self.epochs:
+            #     self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
+
+            self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
 
             # Log the training progress per epoch
             # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
             # print(f'\t Train Loss: {loss:.3f} | Train Precision: {train_precision:7.3f} | Train Recall: {train_recall:7.3f} | Train F1: {train_f1:7.3f}')
             # print(f'\t Val. Precision: {val_precision:7.3f} | Val. Recall: {val_recall:7.3f} | Val F1: {val_f1:7.3f}')
             print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-            print(f'\t Train Loss: {train_loss:.3f}')
-            print(f'\t Val. Loss: {val_loss:.3f}\n')
+            print(f'\tTrain Detection Loss: {train_det_loss:.4f}, Train Recognition Loss: {train_rec_loss:.4f}')
+            print(f'\tTrain Precision: {train_precision:.4f}, Val. Precision: {val_precision:.4f}')
+            print(f'\tTrain Recall: {train_recall:.4f}, Val. Recall: {val_recall:.4f}')
+            print(f'\tTrain F1: {train_f1:.4f}, Val. F1: {val_f1:.4f}\n')
