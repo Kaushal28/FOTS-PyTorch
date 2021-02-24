@@ -7,12 +7,11 @@
         "shuffle": false
     },
     "epochs": 40,
-    "lr_schedular": "ReduceLROnPlateau",
+    "lr_schedular": "CosineAnnealingWarmRestarts",
     "lr_scheduler_config": {
-        "mode": "min",
-        "patience": 3,
-        "factor": 0.1,
-        "min_lr": 0.00001,
+        "T_0": 5,
+        "T_mult": 1,
+        "eta_min": 0.00001,
         "verbose": true
     },
     "optimizer": "Adam",
