@@ -118,17 +118,17 @@ class Train:
                 # Forward pass
                 pred_score_map, pred_geo_map, pred_recog, pred_bboxes, pred_mapping, indices = self.model(images, bboxes, mapping)
 
-                transcripts = transcripts[indices]
-                pred_boxes = pred_bboxes[indices]
-                pred_mapping = mapping[indices]
-                # pred_fns = [image_paths[i] for i in pred_mapping]
+                # transcripts = transcripts[indices]
+                # pred_boxes = pred_bboxes[indices]
+                # pred_mapping = mapping[indices]
+                # # pred_fns = [image_paths[i] for i in pred_mapping]
 
-                labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
-                labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
-                recog = (labels, label_lengths)
+                # labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
+                # labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
+                # recog = (labels, label_lengths)
 
-                # Calculate loss
-                val_loss += self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
+                # # Calculate loss
+                # val_loss += self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
 
                 pred_transcripts = []
                 # pred_fns = []
@@ -150,7 +150,8 @@ class Train:
                 # total_metrics += self._eval_metrics((pred_boxes, pred_transcripts, pred_fns),
                 #                                         (bboxs, transcripts, gt_fns))
 
-        return val_loss / len(self.valid_iterator)
+        # return val_loss / len(self.valid_iterator)
+        return 0
         
         # return (
         #     total_metrics[0] / len(self.train_iterator),  # precision
