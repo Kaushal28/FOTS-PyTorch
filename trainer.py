@@ -198,10 +198,15 @@ class Train:
         print(f"Loading checkpoint from: {path}")
         # Load everything back
         state_dict = torch.load(path)
-        self.start_epoch = state_dict["epoch"] + 1
+        self.start_epoch = state_dict["epoch"]
         self.model.load_state_dict(state_dict["model"])
         self.optimizer.load_state_dict(state_dict["optimizer"])
         self.lr_scheduler.load_state_dict(state_dict["lr_scheduler"])
+
+        for state in self.optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(self.device)
 
     def train(self):
         """Train the model for given numner of epochs."""
@@ -218,7 +223,7 @@ class Train:
 
             # self.lr_scheduler.step(val_loss)
             self.lr_scheduler.step()
-            print(f"New learning rate: {self.lr_scheduler.get_lr()[0]}")
+            print(f"New learning rate: {self.lr_scheduler.get_last_lr()[0]}")
 
             # Epoch start time
             end_time = time()
