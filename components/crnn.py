@@ -123,7 +123,7 @@ class CRNN(nn.Module):
                 stride=1, padding=1
             ),
             nn.BatchNorm2d(64),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
 
             # conv_bn_relu
             nn.Conv2d(
@@ -131,7 +131,7 @@ class CRNN(nn.Module):
                 stride=1, padding=1
             ),
             nn.BatchNorm2d(64),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
 
             # height-max-pool 
             HeightMaxPool2d(),
@@ -142,7 +142,7 @@ class CRNN(nn.Module):
                 stride=1, padding=1
             ),
             nn.BatchNorm2d(128),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
 
             # conv_bn_relu
             nn.Conv2d(
@@ -150,7 +150,7 @@ class CRNN(nn.Module):
                 stride=1, padding=1
             ),
             nn.BatchNorm2d(128),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
 
             # height-max-pool 
             HeightMaxPool2d(),
@@ -161,7 +161,7 @@ class CRNN(nn.Module):
                 stride=1, padding=1
             ),
             nn.BatchNorm2d(256),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
 
             # conv_bn_relu
             nn.Conv2d(
@@ -169,7 +169,7 @@ class CRNN(nn.Module):
                 stride=1, padding=1
             ),
             nn.BatchNorm2d(256),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
 
             # height-max-pool 
             HeightMaxPool2d()

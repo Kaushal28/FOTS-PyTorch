@@ -121,18 +121,6 @@ class Train:
                 # Forward pass
                 pred_score_map, pred_geo_map, pred_recog, pred_bboxes, pred_mapping, indices = self.model(images, bboxes, mapping)
 
-                # transcripts = transcripts[indices]
-                # pred_boxes = pred_bboxes[indices]
-                # pred_mapping = mapping[indices]
-                # # pred_fns = [image_paths[i] for i in pred_mapping]
-
-                # labels, label_lengths = self.transcript_encoder.encode(transcripts.tolist())
-                # labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
-                # recog = (labels, label_lengths)
-
-                # # Calculate loss
-                # val_loss += self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
-
                 pred_transcripts = []
                 pred_fns = []
                 if len(pred_mapping) > 0:
@@ -140,14 +128,17 @@ class Train:
                     pred_bboxes = pred_bboxes[indices]
                     pred_fns = [image_paths[i] for i in pred_mapping]
 
-                    labels, label_lengths = self.transcript_encoder.encode(transcripts[indices].tolist())
-                    labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
-                    recog = (labels, label_lengths)
+                    try:
+                        labels, label_lengths = self.transcript_encoder.encode(transcripts[indices].tolist())
+                        labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
+                        recog = (labels, label_lengths)
 
-                    # Calculate loss
-                    det_loss, rec_loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
-                    val_det_loss += det_loss.item()
-                    val_rec_loss += rec_loss.item()
+                        # Calculate loss
+                        det_loss, rec_loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
+                        val_det_loss += det_loss.item()
+                        val_rec_loss += rec_loss.item()
+                    except Exception:
+                        pass
 
                     pred, lengths = pred_recog
                     _, pred = pred.max(2)
