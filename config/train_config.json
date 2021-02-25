@@ -13,7 +13,7 @@
     },
     "optimizer": "Adam",
     "optimizer_config": {
-        "lr": 0.001
+        "lr": 0.01
     },
     "model_save_path": "/content/drive/MyDrive/cs2",
     "fots_hyperparameters": {

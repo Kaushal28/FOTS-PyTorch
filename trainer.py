@@ -94,10 +94,7 @@ class Train:
                 (pred_boxes, pred_transcripts, pred_fns),
                 (bboxes, transcripts, pred_fns)
             )
-        
-        # return (
-        #     epoch_loss / len(self.train_iterator)
-        # )
+
         return (
             epoch_det_loss / len(self.train_iterator),
             epoch_rec_loss / len(self.train_iterator),
@@ -110,7 +107,7 @@ class Train:
         """Validate after training a single epoch."""
         self.model.eval()
         total_metrics = np.zeros(3)
-        # val_loss = 0
+        val_det_loss, val_rec_loss = 0, 0
 
         with torch.no_grad():
             for i, batch in tqdm(enumerate(self.valid_iterator), total=len(self.valid_iterator), position=0, leave=True):
@@ -143,6 +140,15 @@ class Train:
                     pred_bboxes = pred_bboxes[indices]
                     pred_fns = [image_paths[i] for i in pred_mapping]
 
+                    labels, label_lengths = self.transcript_encoder.encode(transcripts[indices].tolist())
+                    labels, label_lengths = labels.to(self.device), label_lengths.to(self.device)
+                    recog = (labels, label_lengths)
+
+                    # Calculate loss
+                    det_loss, rec_loss = self.loss(score_map, pred_score_map, geo_map, pred_geo_map, recog, pred_recog, training_mask).item()
+                    val_det_loss += det_loss.item()
+                    val_rec_loss += rec_loss.item()
+
                     pred, lengths = pred_recog
                     _, pred = pred.max(2)
                     for idx in range(lengths.numel()):
@@ -155,11 +161,10 @@ class Train:
                 gt_fns = [image_paths[i] for i in mapping]
                 total_metrics += self._eval_metrics((pred_bboxes, pred_transcripts, pred_fns),
                                                         (bboxes, transcripts, gt_fns))
-
-        # return val_loss / len(self.valid_iterator)
-        # return 0
         
         return (
+            val_det_loss / len(self.valid_iterator),
+            val_rec_loss / len(self.valid_iterator),
             total_metrics[0] / len(self.train_iterator),  # precision
             total_metrics[1] / len(self.train_iterator),  # recall
             total_metrics[2] / len(self.train_iterator)  # f1-score
@@ -219,7 +224,7 @@ class Train:
             # Train
             train_det_loss, train_rec_loss, train_precision, train_recall, train_f1 = self.train_epoch(epoch)
             # Evaluate
-            val_precision, val_recall, val_f1 = self.eval_epoch()
+            val_det_loss, val_rec_loss, val_precision, val_recall, val_f1 = self.eval_epoch()
 
             # self.lr_scheduler.step(val_loss)
             self.lr_scheduler.step()
@@ -243,7 +248,8 @@ class Train:
             self._save_checkpoint(f"FOTS_last_checkpoint.pt", epoch+1)
 
             print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-            print(f'\tTrain Detection Loss: {train_det_loss:.4f}, Train Recognition Loss: {train_rec_loss:.4f}')
+            print(f'\tTrain Detection Loss: {train_det_loss:.4f}, Val Detection Loss: {val_det_loss:.4f}')
+            print(f'\tTrain Recognition Loss: {train_rec_loss:.4f}, Val Recognition Loss: {val_rec_loss:.4f}')
             print(f'\tTrain Precision: {train_precision:.4f}, Val. Precision: {val_precision:.4f}')
             print(f'\tTrain Recall: {train_recall:.4f}, Val. Recall: {val_recall:.4f}')
             print(f'\tTrain F1: {train_f1:.4f}, Val. F1: {val_f1:.4f}\n')
