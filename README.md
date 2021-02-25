@@ -62,3 +62,4 @@ TODO:
 - [ ] Implement Recognition Branch
 - [ ] Validate both Detection and Recognition Branch
 - [ ] Full training on SynthText Dataset
+- [ ] Combine "detection" and "recognition" branches and make training mode configurable
