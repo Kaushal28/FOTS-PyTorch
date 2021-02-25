@@ -14,7 +14,7 @@ class Train:
     Trainer class which defines model training and evaluation methods.
     """
 
-    def __init__(self, model, train_iterator, valid_iterator, loss, metric, optimizer, lr_scheduler, config):
+    def __init__(self, model, train_iterator, valid_iterator, loss, metric, optimizer, lr_scheduler, config, resume):
         super().__init__()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -26,8 +26,12 @@ class Train:
         self.transcript_encoder = TranscriptEncoder(classes)
         self.metric = metric
         self.epochs = config["epochs"]
+        self.start_epoch = 0
         self.loss = loss
         self.config = config
+
+        if resume:
+            self._load_checkpoint(resume)
 
         self.model.to(self.device)
 
@@ -169,32 +173,52 @@ class Train:
         elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
         return elapsed_mins, elapsed_secs
     
-    def _save_model(self, name, model):
-        """Save the given model at given path."""
+    def _save_checkpoint(self, name, epoch):
+        """Save the model checkpoint at given path."""
         if not os.path.isdir(self.config["model_save_path"]):
             os.makedirs(self.config["model_save_path"], exist_ok=True)
+
+        # Define everything to be saved
+        state_dict = {
+            "epoch": epoch,
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "lr_scheduler": self.lr_scheduler.state_dict(),
+            "config": self.config
+        }
+
+        # Save checkpoint
         torch.save(
-            model.state_dict(),
+            state_dict,
             os.path.join(self.config["model_save_path"], name)
         )
+
+    def _load_checkpoint(self, path):
+        """Load checkpoint from given path."""
+        print(f"Loading checkpoint from: {path}")
+        # Load everything back
+        state_dict = torch.load(path)
+        self.start_epoch = state_dict["epoch"] + 1
+        self.model.load_state_dict(state_dict["model"])
+        self.optimizer.load_state_dict(state_dict["optimizer"])
+        self.lr_scheduler.load_state_dict(state_dict["lr_scheduler"])
 
     def train(self):
         """Train the model for given numner of epochs."""
 
-        best_val_loss = float('inf')
-        for epoch in range(self.epochs):
+        # best_val_loss = float('inf')
+        for epoch in range(self.start_epoch, self.epochs):
             # Epoch start time
             start_time = time()
 
             # Train
             train_det_loss, train_rec_loss, train_precision, train_recall, train_f1 = self.train_epoch(epoch)
-            # train_loss = self.train_epoch(epoch)
             # Evaluate
             val_precision, val_recall, val_f1 = self.eval_epoch()
-            # val_loss = self.eval_epoch()
 
             # self.lr_scheduler.step(val_loss)
-            # self.lr_scheduler.step()
+            self.lr_scheduler.step()
+            print(f"New learning rate: {self.lr_scheduler.get_lr()[0]}")
 
             # Epoch start time
             end_time = time()
@@ -207,15 +231,12 @@ class Train:
             #     self._save_model(f"FOTS_best.pt", self.model)
             #     best_val_loss = val_loss
             
-            if epoch+1 == self.epochs:
-                self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
+            # if epoch+1 == self.epochs:
+            #     self._save_checkpoint(f"FOTS_epoch{epoch+1}.pt", self.model)
 
-            # self._save_model(f"FOTS_epoch{epoch+1}.pt", self.model)
+            # Save checkpoint at every epoch for now
+            self._save_checkpoint(f"FOTS_last_checkpoint.pt", epoch+1)
 
-            # Log the training progress per epoch
-            # print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
-            # print(f'\t Train Loss: {loss:.3f} | Train Precision: {train_precision:7.3f} | Train Recall: {train_recall:7.3f} | Train F1: {train_f1:7.3f}')
-            # print(f'\t Val. Precision: {val_precision:7.3f} | Val. Recall: {val_recall:7.3f} | Val F1: {val_f1:7.3f}')
             print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
             print(f'\tTrain Detection Loss: {train_det_loss:.4f}, Train Recognition Loss: {train_rec_loss:.4f}')
             print(f'\tTrain Precision: {train_precision:.4f}, Val. Precision: {val_precision:.4f}')

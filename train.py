@@ -30,7 +30,7 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def main(config):
+def main(config, resume):
     """Main entry point of train module."""
     # Initialize the dataset
     # Full dataset
@@ -77,7 +77,7 @@ def main(config):
 
     trainer = Train(
         model, icdar_train_data_loader, icdar_val_data_loader, loss,
-        fots_metric, optimizer, lr_schedular, config
+        fots_metric, optimizer, lr_schedular, config, resume
     )
 
     trainer.train()
@@ -114,11 +114,15 @@ if __name__ == '__main__':
         '-c', '--config', default="../config/train_config.json",
         type=str, help='Training config file path.'
     )
+    parser.add_argument(
+        '-r', '--resume', default="",
+        type=str, help='Checkpoint path.'
+    )
     args = parser.parse_args()
 
     if args.config is not None:
         with open(args.config, "r") as f:
             config = json.load(f)
-        main(config)
+        main(config, args.resume)
     else:
         print("Invalid training configuration file provided.")
