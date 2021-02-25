@@ -63,3 +63,10 @@ TODO:
 - [ ] Validate both Detection and Recognition Branch
 - [ ] Full training on SynthText Dataset
 - [ ] Combine "detection" and "recognition" branches and make training mode configurable
+
+## References:
+
+- https://arxiv.org/pdf/1801.01671.pdf
+- https://arxiv.org/pdf/1704.03155.pdf
+- https://github.com/jiangxiluning/FOTS.PyTorch
+- https://github.com/argman/EAST
