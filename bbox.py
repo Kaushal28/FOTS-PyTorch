@@ -187,11 +187,11 @@ class Toolbox:
             return np.array([])
 
         # here we filter some low score boxes by the average score map, this is different from the orginal paper
-        # for i, box in enumerate(boxes):
-        #     mask = np.zeros_like(score_map, dtype = np.uint8)
-        #     cv2.fillPoly(mask, box[:8].reshape((-1, 4, 2)).astype(np.int32) // 4, 1)
-        #     boxes[i, 8] = cv2.mean(score_map, mask)[0]
-        # boxes = boxes[boxes[:, 8] > box_thresh]
+        for i, box in enumerate(boxes):
+            mask = np.zeros_like(score_map, dtype = np.uint8)
+            cv2.fillPoly(mask, box[:8].reshape((-1, 4, 2)).astype(np.int32) // 4, 1)
+            boxes[i, 8] = cv2.mean(score_map, mask)[0]
+        boxes = boxes[boxes[:, 8] > box_thresh]
         return boxes
 
     @staticmethod

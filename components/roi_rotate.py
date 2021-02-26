@@ -27,8 +27,10 @@ class ROIRotate(nn.Module):
             feature = feature_map[img_index]  # B * H * W * C
             images.append(feature)
 
-            x1, y1, x2, y2, x3, y3, x4, y4 = box / 4  # 512 -> 128
+            # Change bbox size from 512 to 128 as feature maps are img_size/4
+            x1, y1, x2, y2, x3, y3, x4, y4 = box / 4
 
+            # https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html#b-rotated-rectangle
             rotated_rect = cv2.minAreaRect(np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]]))
             box_w, box_h = rotated_rect[1][0], rotated_rect[1][1]
 
