@@ -21,7 +21,7 @@ def _load_model(model_path):
     """Load model from given path to available device."""
     model = FOTSModel()
     model.to(DEVICE)
-    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+    model.load_state_dict(torch.load(model_path, map_location=DEVICE)["model"])
     return model
 
 
