@@ -41,7 +41,7 @@ def inference(args):
     model = _load_model(args.model)
     for image_path in os.listdir(args.input_dir):
         with torch.no_grad():
-            pred_bboxes, pred_transcripts = Toolbox.predict(Path(image_path), model, True, Path('.'), True)
+            pred_bboxes, pred_transcripts = Toolbox.predict(Path(args.input_dir + os.sep + image_path), model, True, Path('.'), True)
 
 
 if __name__ == "__main__":

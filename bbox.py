@@ -283,6 +283,7 @@ class Toolbox:
 
     @staticmethod
     def predict(im_fn, model, with_img=False, output_dir=None, with_gpu=False):
+        model.eval()
         im = cv2.imread(im_fn.as_posix())[:, :, ::-1]
         im_resized, (ratio_h, ratio_w) = Toolbox.resize_image(im)
         im_resized = im_resized.astype(np.float32)
@@ -314,8 +315,7 @@ class Toolbox:
 
         polys = []
         if len(boxes) != 0:
-
-            for box in boxes:
+            for box, txt in zip(boxes, pred_transcripts):
                 box = Toolbox.sort_poly(box.astype(np.int32))
                 if np.linalg.norm(box[0] - box[1]) < 5 or np.linalg.norm(box[3] - box[0]) < 5:
                     # print('wrong direction')
