@@ -12,6 +12,9 @@ from data_helpers.data_utils import resize_image
 from model import FOTSModel
 from bbox import Toolbox
 
+from pathlib import Path
+
+
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def _load_model(model_path):
@@ -37,39 +40,8 @@ def inference(args):
     """FOTS Inference on give images."""
     model = _load_model(args.model)
     for image_path in os.listdir(args.input_dir):
-        image = _load_image(os.path.join(args.input_dir, image_path))
-
-        # Forward pass
-        pred_score_map, pred_geo_map = model(image)
-
-        pred_score_map = pred_score_map.permute(0, 2, 3, 1).detach().cpu().numpy()
-        pred_geo_map = pred_geo_map.permute(0, 2, 3, 1).detach().cpu().numpy()
-
-        pred_bboxes = []
-        for idx in range(pred_score_map.shape[0]): 
-            bboxes = Toolbox.detect(
-                score_map=pred_score_map[idx, :, :, 0],
-                geo_map=pred_geo_map[idx, :, :, ]
-            )
-            if len(bboxes) > 0:
-                pred_bboxes.append(bboxes)
-        
-        pred_bboxes = np.concatenate(pred_bboxes)
-
-        image = image.permute(0, 2, 3, 1)[0].cpu().detach().numpy()
-
-        for i in range(pred_bboxes.shape[0]):
-            # Define predicted rectangle vertices
-            vertices = [
-                [pred_bboxes[i][0], pred_bboxes[i][1]],
-                [pred_bboxes[i][2], pred_bboxes[i][3]],
-                [pred_bboxes[i][4], pred_bboxes[i][5]],
-                [pred_bboxes[i][6], pred_bboxes[i][7]]
-            ]
-            cv2.polylines(image, [np.array(vertices).astype(np.int32)], isClosed=True, color=(255, 255, 0), thickness=1)
-        
-        # Save the image
-        cv2.imwrite(os.path.join(args.output_dir, os.path.basename(image_path)), image)
+        with torch.no_grad():
+            pred_bboxes, pred_transcripts = Toolbox.predict(Path(image_path), model, True, Path('.'), True)
 
 
 if __name__ == "__main__":

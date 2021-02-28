@@ -7,6 +7,8 @@ import numpy as np
 import lanms
 import torch
 
+from utils import TranscriptEncoder, classes
+transcript_encoder = TranscriptEncoder(classes)
 
 class Toolbox:
 
@@ -132,7 +134,7 @@ class Toolbox:
         return image_new
 
     @staticmethod
-    def resize_image(im, max_side_len = 2400):
+    def resize_image(im, max_side_len=512):
         '''
         resize image to a size multiple of 32 which is required by the network
         :param im: the resized image
@@ -297,6 +299,18 @@ class Toolbox:
             boxes = boxes[:, :8].reshape((-1, 4, 2))
             boxes[:, :, 0] /= ratio_w
             boxes[:, :, 1] /= ratio_h
+        
+        pred_transcripts = []
+        if len(mapping) > 0:
+            pred, lengths = preds
+            _, pred = pred.max(2)
+            for idx in range(lengths.numel()):
+                l = lengths[idx]
+                p = pred[:l, idx]
+                txt = transcript_encoder.decode(p, l)
+                pred_transcripts.append(txt)
+            pred_transcripts = np.array(pred_transcripts)
+            pred_transcripts = pred_transcripts[indices]
 
         polys = []
         if len(boxes) != 0:
@@ -316,12 +330,13 @@ class Toolbox:
                 if with_img:
                     cv2.polylines(im[:, :, ::-1], [box.astype(np.int32).reshape((-1, 1, 2))], True,
                                   color=(255, 255, 0), thickness=1)
+                    cv2.putText(im[:, :, ::-1], txt, (box[0][0], box[0][1]-5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 1)
 
         if output_dir:
             img_path = output_dir / im_fn.name
             cv2.imwrite(img_path.as_posix(), im[:, :, ::-1])
 
-        return polys, im
+        return polys, pred_transcripts
 
     @staticmethod
     def get_images_for_test(test_data_path):
